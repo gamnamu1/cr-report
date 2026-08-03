@@ -17,7 +17,7 @@ export default async function HomePage() {
             citizen-reviewers
           </h1>
           <p className="text-navy-700 text-base md:text-lg leading-relaxed">
-            시민이 검수한 뉴스 비평 리포트를 모아 두는 열람 전용 공간입니다.
+            시민들이 검수한 뉴스 비평 리포트 열람 공간입니다.
           </p>
         </header>
 
