@@ -240,7 +240,7 @@ export function ResultViewer({ result }: ResultViewerProps) {
   };
 
   const shareMessage =
-    `[citizen-reviewers] “${shareTitle}” 기사에 대한 시민 검수 리포트를 확인해보세요.`;
+    `[Critical Readers] “${shareTitle}” 기사에 대한 시민 검수 리포트를 확인해보세요.`;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-navy-50 via-white to-amber-50">
