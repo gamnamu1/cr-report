@@ -17,7 +17,11 @@ export default async function HomePage() {
             Critical Readers
           </h1>
           <p className="text-navy-700 text-base md:text-lg leading-relaxed">
+<<<<<<< Updated upstream
             시민들이 검수한 뉴스 비평 리포트 열람 공간입니다.
+=======
+            언론은 시민을 위해 존재하며, 시민의 신뢰는 언론의 가장 소중한 자산이다. <span style="font-size:0.8; opacity:0.8;">- 언론윤리헌장 중에서</span>
+>>>>>>> Stashed changes
           </p>
         </header>
 
