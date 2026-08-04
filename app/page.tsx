@@ -17,41 +17,41 @@ export default async function HomePage() {
             Critical Readers
           </h1>
           <p className="text-navy-700 text-base md:text-lg leading-relaxed">
-            언론은 시민을 위해 존재하며, 시민의 신뢰는 언론의 가장 소중한 자산이다. <span style="font-size:0.8; opacity:0.8;">- 언론윤리헌장 중에서</span>
-          </p >
-        </header >
+            언론은 시민을 위해 존재하며, 시민의 신뢰는 언론의 가장 소중한
+            자산이다.{" "}
+            <span className="text-[0.8em] opacity-80">- 언론윤리헌장 중에서</span>
+          </p>
+        </header>
 
-        {
-          reports.length === 0 ? (
-            <div className="bg-white rounded-2xl shadow-sm border border-navy-100 p-12 text-center">
-              <p className="text-navy-600 text-lg">준비 중입니다.</p>
-            </div>
-          ) : (
-            <ul className="space-y-4">
-              {reports.map((report) => (
-                <li key={report.share_id}>
-                  <Link
-                    href={`/report/${encodeURIComponent(report.share_id)}`}
-                    className="block bg-white rounded-xl shadow-sm border border-navy-100 p-6 hover:shadow-md hover:border-navy-200 transition-all"
-                  >
-                    <h2 className="text-navy-900 font-semibold text-lg md:text-xl mb-2 line-clamp-2">
-                      {report.title || "제목 미확인"}
-                    </h2>
-                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-navy-600">
-                      <span>{report.publisher || "매체 미확인"}</span>
-                      {report.publish_date && (
-                        <span>
-                          게재일 {formatIsoDateToKorean(report.publish_date)}
-                        </span>
-                      )}
-                    </div>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )
-        }
-      </div >
-    </main >
+        {reports.length === 0 ? (
+          <div className="bg-white rounded-2xl shadow-sm border border-navy-100 p-12 text-center">
+            <p className="text-navy-600 text-lg">준비 중입니다.</p>
+          </div>
+        ) : (
+          <ul className="space-y-4">
+            {reports.map((report) => (
+              <li key={report.share_id}>
+                <Link
+                  href={`/report/${encodeURIComponent(report.share_id)}`}
+                  className="block bg-white rounded-xl shadow-sm border border-navy-100 p-6 hover:shadow-md hover:border-navy-200 transition-all"
+                >
+                  <h2 className="text-navy-900 font-semibold text-lg md:text-xl mb-2 line-clamp-2">
+                    {report.title || "제목 미확인"}
+                  </h2>
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-navy-600">
+                    <span>{report.publisher || "매체 미확인"}</span>
+                    {report.publish_date && (
+                      <span>
+                        게재일 {formatIsoDateToKorean(report.publish_date)}
+                      </span>
+                    )}
+                  </div>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </main>
   );
 }
