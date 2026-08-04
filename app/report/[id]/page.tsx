@@ -24,7 +24,7 @@ export async function generateMetadata({
   params,
 }: ReportPageProps): Promise<Metadata> {
   const { id } = await params;
-  const fallback: Metadata = { title: "citizen-reviewers 리포트" };
+  const fallback: Metadata = { title: "Critical Readers 리포트" };
 
   const row = await getCitizenReport(id).catch((e) => {
     console.error("generateMetadata: Supabase fetch failed", e);
@@ -35,7 +35,7 @@ export async function generateMetadata({
   const title = row.title || "게시된 리포트";
   const publisher = row.publisher || "";
 
-  const ogTitle = `[citizen-reviewers] ${title}`;
+  const ogTitle = `[Critical Readers] ${title}`;
   const description = publisher
     ? `${publisher} 기사에 대한 시민 검수 리포트`
     : "시민이 검수한 뉴스 비평 리포트";

@@ -14,7 +14,7 @@ export function TxtPreviewModal({ result, onClose }: TxtPreviewModalProps) {
 
         let content = `
 ================================================================
-                  [ citizen-reviewers 리포트 ]
+                  [ Critical Readers 리포트 ]
 ================================================================
 
 [ 리포트 개요 ]
@@ -51,7 +51,7 @@ ${body.trim()}
 
         content += `
 ================================================================
-  citizen-reviewers: 시민이 검수한 뉴스 비평 리포트
+  Critical Readers: 시민이 검수한 뉴스 비평 리포트
 ================================================================
 
 * 알림: 뉴스는 어떻게 편집하느냐에 따라 의미가 달라질 수 있습니다. 같은 기사라도 매체에 따라 제목·사진·표의 위치와 크기, 뉘앙스가 달라지고, 연관 기사들을 어떻게 엮는지에 따라 맥락이 달라지기 때문입니다. 이 리포트는 개별 기사에 집중하므로, 주변 기사와의 맥락이나 편집 의도는 평가하지 않습니다.
@@ -63,7 +63,7 @@ ${body.trim()}
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `citizen_reviewers_report_${Date.now()}.txt`;
+        link.download = `critical_readers_report_${Date.now()}.txt`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -103,7 +103,7 @@ ${body.trim()}
                     <div className="flex-1 overflow-y-auto p-8 bg-navy-50/50 custom-scrollbar">
                         <div className="bg-white shadow-sm border border-navy-100 rounded-xl p-8 max-w-3xl mx-auto">
                             <div className="text-center mb-8 border-b-2 border-navy-900 pb-6">
-                                <h1 className="text-2xl font-serif font-bold text-navy-900 mb-2">citizen-reviewers</h1>
+                                <h1 className="text-2xl font-serif font-bold text-navy-900 mb-2">Critical Readers</h1>
                                 <p className="text-navy-600">시민이 검수한 뉴스 비평 리포트</p>
                             </div>
 

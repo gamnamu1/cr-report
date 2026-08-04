@@ -14,7 +14,7 @@ export default async function HomePage() {
       <div className="mx-auto max-w-4xl px-6 py-16">
         <header className="mb-12 text-center">
           <h1 className="text-3xl md:text-4xl font-bold text-navy-900 mb-3">
-            citizen-reviewers
+            Critical Readers
           </h1>
           <p className="text-navy-700 text-base md:text-lg leading-relaxed">
             시민들이 검수한 뉴스 비평 리포트 열람 공간입니다.

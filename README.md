@@ -1,4 +1,4 @@
-# citizen-reviewers
+# Critical Readers
 
 시민이 검수한 뉴스 비평 리포트를 모아 두는 **열람 전용** 웹사이트.
 
@@ -83,7 +83,7 @@ npm start
 ## 프로젝트 구조
 
 ```
-citizen-reviewers/
+critical-readers/
 ├── app/
 │   ├── globals.css
 │   ├── layout.tsx
