@@ -206,7 +206,7 @@ export function ResultViewer({ result }: ResultViewerProps) {
       // Regular paragraph (including bold text lines)
       else if (line.trim()) {
         elements.push(
-          <p key={key++} className="text-navy-700 leading-loose my-3 font-serif text-lg">
+          <p key={key++} className="text-navy-700 leading-loose my-2 font-serif text-lg">
             {highlightEthics(line)}
           </p>
         );
