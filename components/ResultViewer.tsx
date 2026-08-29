@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { ExternalLink, FileDown, ArrowLeft, Users, NotebookPen, BookOpenCheck, Newspaper, Link2 } from 'lucide-react';
 import type { AnalysisResult } from '../types';
+import { truncateShareTitle } from '../lib/shareTitle';
 
 const TxtPreviewModal = dynamic(() => import('./TxtPreviewModal').then(mod => mod.TxtPreviewModal), {
   loading: () => null,
@@ -231,7 +232,7 @@ export function ResultViewer({ result }: ResultViewerProps) {
     : null;
 
   const shareTitle =
-    result.article_info.title?.trim() || '제목 미확인';
+    truncateShareTitle(result.article_info.title ?? '') || '제목 미확인';
 
   const getShareUrl = () => {
     if (!sharePath) return null;
@@ -240,7 +241,7 @@ export function ResultViewer({ result }: ResultViewerProps) {
   };
 
   const shareMessage =
-    `[Critical Readers] “${shareTitle}” 기사에 대한 시민 검수 리포트를 확인해보세요.`;
+    `[Critical Readers] “${shareTitle}” 기사에 대한 시민 비평 리포트를 확인해보세요.`;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-navy-50 via-white to-amber-50">
