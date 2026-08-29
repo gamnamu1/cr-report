@@ -2,7 +2,6 @@ import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
-import { CachedBanner } from "@/components/CachedBanner";
 import { ResultViewer } from "@/components/ResultViewer";
 import { getCitizenReport, toAnalysisResult } from "@/lib/supabase";
 
@@ -68,10 +67,5 @@ export default async function ReportPage({ params }: ReportPageProps) {
 
   const result = toAnalysisResult(row);
 
-  return (
-    <>
-      {result.analyzed_at && <CachedBanner publishedAt={result.analyzed_at} />}
-      <ResultViewer result={result} />
-    </>
-  );
+  return <ResultViewer result={result} />;
 }

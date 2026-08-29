@@ -90,7 +90,6 @@ critical-readers/
 │   ├── page.tsx              # 리포트 목록
 │   └── report/[id]/page.tsx  # 리포트 상세 (server component)
 ├── components/
-│   ├── CachedBanner.tsx      # "게시된 리포트입니다" 배너
 │   ├── ResultViewer.tsx      # 3종 탭 리포트 렌더러
 │   └── TxtPreviewModal.tsx   # TXT 내보내기 모달
 ├── lib/
