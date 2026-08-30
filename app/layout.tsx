@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import { SITE_URL } from "@/lib/site";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: "Critical Readers",
   description: "시민이 검수한 뉴스 비평 리포트를 모아 두는 열람 전용 공간",
 };

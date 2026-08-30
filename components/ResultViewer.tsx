@@ -4,6 +4,7 @@ import { useState, useMemo, useCallback, ComponentType } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { ExternalLink, FileDown, ArrowLeft, Users, NotebookPen, BookOpenCheck, Newspaper, Link2 } from 'lucide-react';
+import { SITE_URL } from '../lib/site';
 import type { AnalysisResult } from '../types';
 
 const TxtPreviewModal = dynamic(() => import('./TxtPreviewModal').then(mod => mod.TxtPreviewModal), {
@@ -236,7 +237,8 @@ export function ResultViewer({ result }: ResultViewerProps) {
   const getShareUrl = () => {
     if (!sharePath) return null;
 
-    return `${window.location.origin}${sharePath}`;
+    // 접속 호스트(preview 배포·vercel.app 등)와 무관하게 정식 도메인으로 공유한다.
+    return `${SITE_URL}${sharePath}`;
   };
 
   const shareMessage =
