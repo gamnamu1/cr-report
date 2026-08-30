@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 
 import { ResultViewer } from "@/components/ResultViewer";
 import { truncateShareTitle } from "@/lib/shareTitle";
+import { SITE_URL_FROM_ENV } from "@/lib/site";
 import { getCitizenReport, toAnalysisResult } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
@@ -13,6 +14,10 @@ interface ReportPageProps {
 }
 
 async function resolveBaseUrl(): Promise<string> {
+  // 정식 도메인이 설정돼 있으면 접속 호스트와 무관하게 그 값을 쓴다.
+  // vercel.app 과 cr-report.kr 이 같은 리포트를 각각 색인하는 것을 막는다.
+  if (SITE_URL_FROM_ENV) return SITE_URL_FROM_ENV;
+
   const h = await headers();
   const host =
     h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
@@ -46,6 +51,9 @@ export async function generateMetadata({
   return {
     title: `[Critical Readers] ${fullTitle}`,
     description,
+    alternates: {
+      canonical: canonicalUrl,
+    },
     openGraph: {
       title: shortTitle,
       description,

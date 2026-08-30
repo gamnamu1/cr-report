@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import {
   formatIsoDateToKorean,
@@ -5,6 +6,14 @@ import {
 } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  // 접속 호스트와 무관하게 정식 도메인 하나로 색인을 모은다.
+  // app/layout.tsx 의 metadataBase 기준으로 해석된다.
+  alternates: {
+    canonical: "/",
+  },
+};
 
 export default async function HomePage() {
   const reports = await listCitizenReports();
