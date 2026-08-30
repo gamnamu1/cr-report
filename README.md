@@ -122,6 +122,7 @@ critical-readers/
 │   ├── ResultViewer.tsx      # 3종 탭 리포트 렌더러
 │   └── TxtPreviewModal.tsx   # TXT 내보내기 모달
 ├── lib/
+│   ├── shareTitle.ts         # SNS 공유용 기사 제목 축약
 │   ├── site.ts               # 정식 도메인 단일 진실 공급원
 │   ├── supabase.ts           # Supabase REST fetch helper (SDK 미사용)
 │   └── utils.ts

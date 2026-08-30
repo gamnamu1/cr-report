@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
 import { ResultViewer } from "@/components/ResultViewer";
+import { truncateShareTitle } from "@/lib/shareTitle";
 import { SITE_URL_FROM_ENV } from "@/lib/site";
 import { getCitizenReport, toAnalysisResult } from "@/lib/supabase";
 
@@ -36,32 +37,33 @@ export async function generateMetadata({
   });
   if (!row) return fallback;
 
-  const title = row.title || "게시된 리포트";
+  const fullTitle = row.title || "게시된 리포트";
+  const shortTitle = truncateShareTitle(row.title ?? "") || "게시된 리포트";
   const publisher = row.publisher || "";
 
-  const ogTitle = `[Critical Readers] ${title}`;
   const description = publisher
-    ? `${publisher} 기사에 대한 시민 검수 리포트`
-    : "시민이 검수한 뉴스 비평 리포트";
+    ? `${publisher} 기사에 대한 시민 비평 리포트`
+    : "뉴스 기사에 대한 시민 비평 리포트";
 
   const baseUrl = await resolveBaseUrl();
   const canonicalUrl = `${baseUrl}/report/${encodeURIComponent(id)}`;
 
   return {
-    title: ogTitle,
+    title: `[Critical Readers] ${fullTitle}`,
     description,
     alternates: {
       canonical: canonicalUrl,
     },
     openGraph: {
-      title: ogTitle,
+      title: shortTitle,
       description,
       type: "article",
       url: canonicalUrl,
+      siteName: "Critical Readers",
     },
     twitter: {
       card: "summary",
-      title: ogTitle,
+      title: shortTitle,
       description,
     },
   };
