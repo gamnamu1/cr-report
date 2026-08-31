@@ -5,6 +5,10 @@ import {
   listCitizenReports,
 } from "@/lib/supabase";
 
+// 조정 가능한 값 3개: span 크기 0.85em · span 농도 /55 (바로 아래 줄),
+// h1 전체 농도 text-navy-900/70 (아래 h1 태그). 농도는 색상 알파라 서로 독립적이다.
+const soft = "text-[0.85em] text-navy-900/55";
+
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
@@ -22,8 +26,9 @@ export default async function HomePage() {
     <main className="min-h-screen bg-gradient-to-br from-navy-50 via-white to-amber-50">
       <div className="mx-auto max-w-4xl px-6 py-16">
         <header className="mb-12 text-center">
-          <h1 className="text-3xl md:text-4xl font-bold text-navy-900 mb-3">
-            Critical Readers
+          <h1 className="text-3xl md:text-4xl font-bold text-navy-900/70 mb-3">
+            C<span className={soft}>ritical</span>{" "}
+            R<span className={soft}>eaders</span>
           </h1>
           <p className="text-navy-700 text-base md:text-lg leading-relaxed">
             언론은 시민을 위해 존재하며, 시민의 신뢰는 언론의 가장 소중한
