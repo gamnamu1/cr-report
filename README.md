@@ -68,7 +68,7 @@ Supabase 테이블 `citizen_reports` 한 행이 리포트 한 건을 완전하�
 
 ## 라우트
 
-- `/` — 검수 완료 리포트 목록 (created_at 내림차순)
+- `/` — 검수 완료 리포트 목록 (created_at 내림차순) > 검색은 현재 전체 클라이언트 필터 방식이다. 리포트가 50~100건에 도달하면 페이지 페이로드를 측정해 서버 검색 전환을 재검토한다.
 - `/report/{share_id}` — 리포트 상세. 존재하지 않으면 `notFound()`
 - `/robots.txt` — `app/robots.ts` 가 생성
 - `/sitemap.xml` — `app/sitemap.ts` 가 생성 (홈 + 전체 리포트 URL)

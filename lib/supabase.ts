@@ -26,6 +26,21 @@ export interface CitizenReportListItem {
   created_at: string;
 }
 
+/**
+ * 홈 화면 검색용 항목. 클라이언트 필터가 훑는 필드(기자명·본문·원문 URL)까지
+ * 함께 가져온다. sitemap 이 쓰는 CitizenReportListItem 은 건드리지 않는다.
+ */
+export interface CitizenReportSearchItem {
+  share_id: string;
+  title: string;
+  publisher: string | null;
+  journalist: string | null;
+  publish_date: string | null;
+  created_at: string;
+  url: string;
+  comprehensive_report: string;
+}
+
 function requireEnv(): { url: string; key: string } {
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
     throw new Error(
@@ -65,6 +80,17 @@ async function supabaseSelect<T>(
 export async function listCitizenReports(): Promise<CitizenReportListItem[]> {
   return supabaseSelect<CitizenReportListItem[]>("citizen_reports", {
     select: "share_id,title,publisher,publish_date,created_at",
+    order: "created_at.desc",
+  });
+}
+
+/** 홈 화면용 조회. 정렬 기준은 listCitizenReports 와 동일하다. */
+export async function listCitizenReportsForSearch(): Promise<
+  CitizenReportSearchItem[]
+> {
+  return supabaseSelect<CitizenReportSearchItem[]>("citizen_reports", {
+    select:
+      "share_id,title,publisher,journalist,publish_date,created_at,url,comprehensive_report",
     order: "created_at.desc",
   });
 }

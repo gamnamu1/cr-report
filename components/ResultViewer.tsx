@@ -20,11 +20,13 @@ const MotionDiv = dynamic(
 
 interface ResultViewerProps {
   result: AnalysisResult;
+  /** "리포트 목록으로" 가 돌아갈 주소. 검색어를 달고 들어온 경우 /?q=... */
+  listHref?: string;
 }
 
 type ReportTab = 'comprehensive' | 'journalist' | 'student';
 
-export function ResultViewer({ result }: ResultViewerProps) {
+export function ResultViewer({ result, listHref = "/" }: ResultViewerProps) {
   const [activeTab, setActiveTab] = useState<ReportTab>('comprehensive');
   const [showPreviewModal, setShowPreviewModal] = useState(false);
 
@@ -252,7 +254,7 @@ export function ResultViewer({ result }: ResultViewerProps) {
         <div className="mx-auto max-w-7xl px-6 py-4">
           <div className="flex items-center justify-between">
             <Link
-              href="/"
+              href={listHref}
               className="flex items-center gap-2 text-navy-600 hover:text-navy-900 transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
