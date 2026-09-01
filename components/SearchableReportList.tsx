@@ -53,16 +53,32 @@ export function SearchableReportList({ reports }: SearchableReportListProps) {
           )
         );
 
+  const hasVisibleReports = visibleReports.length > 0;
+
+  // 화면 갱신을 스크린리더에 알리는 문구. 검색 전과, 아카이브 자체가 빈
+  // 상태("준비 중입니다.")에서는 빈 문자열로 둔다.
+  const searchStatus =
+    reports.length === 0 || normalizedQuery === ""
+      ? ""
+      : hasVisibleReports
+        ? `${visibleReports.length}개의 리포트를 찾았습니다.`
+        : "검색 결과가 없습니다.";
+
   return (
     <div className="mt-6">
       <ExpandingSearch value={query} onChange={setQuery} />
+
+      {/* 항상 마운트해 두고 텍스트만 갱신한다(조건부 렌더 시 낭독되지 않는다). */}
+      <p className="sr-only" aria-live="polite">
+        {searchStatus}
+      </p>
 
       <div className="mt-9">
         {reports.length === 0 ? (
           <div className="bg-white rounded-2xl shadow-sm border border-navy-100 p-12 text-center">
             <p className="text-navy-600 text-lg">준비 중입니다.</p>
           </div>
-        ) : (
+        ) : hasVisibleReports ? (
           <ul className="space-y-4">
             {visibleReports.map((report) => (
               <li key={report.share_id}>
@@ -83,7 +99,7 @@ export function SearchableReportList({ reports }: SearchableReportListProps) {
               </li>
             ))}
           </ul>
-        )}
+        ) : null}
       </div>
     </div>
   );
