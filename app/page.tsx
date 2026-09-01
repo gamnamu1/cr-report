@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { SearchableReportList } from "@/components/SearchableReportList";
+import {
+  SearchableReportList,
+  type ReportListItem,
+} from "@/components/SearchableReportList";
 import {
   formatIsoDateToKorean,
-  listCitizenReports,
+  listCitizenReportsForSearch,
 } from "@/lib/supabase";
 
 // 조정 가능한 값 3개: span 크기 0.85em · span 농도 /55 (바로 아래 줄),
@@ -21,12 +23,25 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage() {
-  const reports = await listCitizenReports();
+  const reports = await listCitizenReportsForSearch();
+
+  // 게재일 포맷은 서버에서 끝낸다. 클라이언트 컴포넌트가 lib/supabase 를
+  // 런타임 import 하지 않도록 문자열로 만들어 내려보낸다.
+  const items: ReportListItem[] = reports.map((report) => ({
+    share_id: report.share_id,
+    title: report.title,
+    publisher: report.publisher,
+    journalist: report.journalist,
+    url: report.url,
+    comprehensive_report: report.comprehensive_report,
+    publishDateLabel: formatIsoDateToKorean(report.publish_date),
+  }));
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-navy-50 via-white to-amber-50">
       <div className="mx-auto max-w-4xl px-6 py-16">
-        <header className="mb-9 text-center">
+        {/* 아래쪽 간격은 SearchableReportList 가 소유한다(형제 마진 병합 주의). */}
+        <header className="text-center">
           <h1 className="text-3xl md:text-4xl font-bold text-navy-900/70 mb-3">
             C<span className={soft}>ritical</span>{" "}
             R<span className={soft}>eaders</span>
@@ -36,38 +51,9 @@ export default async function HomePage() {
             자산이다.{" "}
             <span className="text-[0.8em] opacity-80">- 언론윤리헌장 중에서</span>
           </p>
-
-          <SearchableReportList />
         </header>
 
-        {reports.length === 0 ? (
-          <div className="bg-white rounded-2xl shadow-sm border border-navy-100 p-12 text-center">
-            <p className="text-navy-600 text-lg">준비 중입니다.</p>
-          </div>
-        ) : (
-          <ul className="space-y-4">
-            {reports.map((report) => (
-              <li key={report.share_id}>
-                <Link
-                  href={`/report/${encodeURIComponent(report.share_id)}`}
-                  className="block bg-white rounded-xl shadow-sm border border-navy-100 p-6 hover:shadow-md hover:border-navy-200 transition-all"
-                >
-                  <h2 className="text-navy-900 font-semibold text-lg md:text-xl mb-2 line-clamp-2">
-                    {report.title || "제목 미확인"}
-                  </h2>
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-navy-600">
-                    <span>{report.publisher || "매체 미확인"}</span>
-                    {report.publish_date && (
-                      <span>
-                        게재일 {formatIsoDateToKorean(report.publish_date)}
-                      </span>
-                    )}
-                  </div>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
+        <SearchableReportList reports={items} />
       </div>
     </main>
   );
