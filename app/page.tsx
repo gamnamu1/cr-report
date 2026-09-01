@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { SearchableReportList } from "@/components/SearchableReportList";
 import {
   formatIsoDateToKorean,
   listCitizenReports,
@@ -25,7 +26,7 @@ export default async function HomePage() {
   return (
     <main className="min-h-screen bg-gradient-to-br from-navy-50 via-white to-amber-50">
       <div className="mx-auto max-w-4xl px-6 py-16">
-        <header className="mb-12 text-center">
+        <header className="mb-9 text-center">
           <h1 className="text-3xl md:text-4xl font-bold text-navy-900/70 mb-3">
             C<span className={soft}>ritical</span>{" "}
             R<span className={soft}>eaders</span>
@@ -35,6 +36,8 @@ export default async function HomePage() {
             자산이다.{" "}
             <span className="text-[0.8em] opacity-80">- 언론윤리헌장 중에서</span>
           </p>
+
+          <SearchableReportList />
         </header>
 
         {reports.length === 0 ? (
