@@ -15,17 +15,24 @@ interface ExpandingSearchProps {
  *
  * - 바깥 행의 높이가 40px 로 고정돼 있어 접힘/펼침이 아래 콘텐츠를 밀지 않는다.
  *   (오버레이·absolute 대신 컨테이너 width 만 transition 한다.)
- * - 검색어는 URL·localStorage·analytics 어디에도 남기지 않는다.
+ * - 검색어 상태와 URL(?q=) 반영은 상위 컴포넌트가 담당한다. 이 컴포넌트 자신은
+ *   localStorage·sessionStorage·analytics 어디에도 검색어를 기록하지 않는다.
  */
 export function ExpandingSearch({ value, onChange }: ExpandingSearchProps) {
-  const [expanded, setExpanded] = useState(false);
+  // ?q= 로 진입해 초기 검색어가 있으면 펼친 채로 시작한다.
+  const [expanded, setExpanded] = useState(() => value !== "");
   const buttonRef = useRef<HTMLButtonElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  // 사용자가 버튼으로 직접 열었을 때만 true. ?q= 진입·복원처럼 펼친 채로
+  // 시작하는 경우에는 포커스를 옮기지 않는다.
+  const focusOnExpandRef = useRef(false);
 
   // 펼쳐지면 곧바로 입력할 수 있게 포커스를 넘긴다.
   // input 은 접힘 상태에서 disabled 라, re-render 뒤인 effect 에서 호출해야 한다.
   useEffect(() => {
-    if (expanded) inputRef.current?.focus();
+    if (!expanded || !focusOnExpandRef.current) return;
+    focusOnExpandRef.current = false;
+    inputRef.current?.focus();
   }, [expanded]);
 
   // 수축 판정. React 의 onBlur 는 focusout 이라 자식에서 버블링된다.
@@ -78,8 +85,12 @@ export function ExpandingSearch({ value, onChange }: ExpandingSearchProps) {
             if (expanded) e.preventDefault();
           }}
           onClick={() => {
-            if (expanded) inputRef.current?.focus();
-            else setExpanded(true);
+            if (expanded) {
+              inputRef.current?.focus();
+              return;
+            }
+            focusOnExpandRef.current = true;
+            setExpanded(true);
           }}
           // 보이는 원은 25px, 실제 히트 영역은 투명하게 40px.
           className="group flex h-10 w-10 shrink-0 items-center justify-center rounded-full outline-none"

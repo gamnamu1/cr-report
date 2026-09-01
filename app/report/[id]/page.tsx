@@ -11,6 +11,7 @@ export const dynamic = "force-dynamic";
 
 interface ReportPageProps {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
 async function resolveBaseUrl(): Promise<string> {
@@ -69,7 +70,10 @@ export async function generateMetadata({
   };
 }
 
-export default async function ReportPage({ params }: ReportPageProps) {
+export default async function ReportPage({
+  params,
+  searchParams,
+}: ReportPageProps) {
   const { id } = await params;
 
   const row = await getCitizenReport(id);
@@ -77,5 +81,14 @@ export default async function ReportPage({ params }: ReportPageProps) {
 
   const result = toAnalysisResult(row);
 
-  return <ResultViewer result={result} />;
+  // 목록에서 검색어를 달고 들어왔으면 "리포트 목록으로" 도 같은 검색어로 되돌린다.
+  // canonical·공유 URL 은 q 없이 그대로 둔다(generateMetadata 참고).
+  const { q } = await searchParams;
+  const rawQuery = Array.isArray(q) ? q[0] : q;
+  const listHref =
+    rawQuery && rawQuery.trim() !== ""
+      ? `/?${new URLSearchParams({ q: rawQuery }).toString()}`
+      : "/";
+
+  return <ResultViewer result={result} listHref={listHref} />;
 }

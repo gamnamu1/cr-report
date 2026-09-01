@@ -22,8 +22,18 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function HomePage() {
+interface HomePageProps {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}
+
+export default async function HomePage({ searchParams }: HomePageProps) {
+  // 목록 조회는 q 와 무관하게 항상 전체다. 필터는 클라이언트에서만 일어난다.
   const reports = await listCitizenReportsForSearch();
+
+  const { q } = await searchParams;
+  const rawQuery = Array.isArray(q) ? q[0] : q;
+  // 빈 값·공백뿐인 값은 초기 검색어로 취급하지 않는다.
+  const initialQuery = rawQuery && rawQuery.trim() !== "" ? rawQuery : "";
 
   // 게재일 포맷은 서버에서 끝낸다. 클라이언트 컴포넌트가 lib/supabase 를
   // 런타임 import 하지 않도록 문자열로 만들어 내려보낸다.
@@ -53,7 +63,7 @@ export default async function HomePage() {
           </p>
         </header>
 
-        <SearchableReportList reports={items} />
+        <SearchableReportList reports={items} initialQuery={initialQuery} />
       </div>
     </main>
   );

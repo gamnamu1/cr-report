@@ -20,6 +20,8 @@ export interface ReportListItem {
 interface SearchableReportListProps {
   /** created_at 내림차순으로 정렬된 전체 목록. */
   reports: ReportListItem[];
+  /** ?q= 로 진입했을 때의 초기 검색어. 서버가 searchParams 에서 읽어 내려준다. */
+  initialQuery?: string;
 }
 
 /**
@@ -32,26 +34,48 @@ interface SearchableReportListProps {
  * app/page.tsx 의 header 에 margin 을 두면 형제 마진 병합으로
  * 인용문↔검색창 간격이 벌어진다.
  */
-export function SearchableReportList({ reports }: SearchableReportListProps) {
-  const [query, setQuery] = useState("");
+export function SearchableReportList({
+  reports,
+  initialQuery = "",
+}: SearchableReportListProps) {
+  const [query, setQuery] = useState(initialQuery);
 
   // 필터와 이후 판단은 모두 이 값 하나만 본다.
   const normalizedQuery = query.trim().toLowerCase();
 
+  // 공백으로 나눈 토큰을 모두 만족해야 한다(AND).
+  const tokens =
+    normalizedQuery === "" ? [] : normalizedQuery.split(/\s+/).filter(Boolean);
+
   const visibleReports =
-    normalizedQuery === ""
+    tokens.length === 0
       ? reports
-      : reports.filter((report) =>
-          [
+      : reports.filter((report) => {
+          // 필드 경계에서 문자열이 우연히 이어붙지 않도록 공백으로 잇는다.
+          const haystack = [
             report.title,
             report.publisher,
             report.journalist,
             report.comprehensive_report,
             report.url,
-          ].some((field) =>
-            (field ?? "").toLowerCase().includes(normalizedQuery)
-          )
-        );
+          ]
+            .map((field) => field ?? "")
+            .join(" ")
+            .toLowerCase();
+
+          return tokens.every((token) => haystack.includes(token));
+        });
+
+  // 검색어를 주소창에 반영한다. 히스토리 항목을 쌓지 않도록 replaceState 를 쓰고,
+  // Next 라우터가 쓰는 기존 history state 는 그대로 보존한다.
+  function handleQueryChange(next: string) {
+    setQuery(next);
+
+    const url = new URL(window.location.href);
+    if (next.trim() === "") url.searchParams.delete("q");
+    else url.searchParams.set("q", next);
+    window.history.replaceState(window.history.state, "", url);
+  }
 
   const hasVisibleReports = visibleReports.length > 0;
 
@@ -66,7 +90,7 @@ export function SearchableReportList({ reports }: SearchableReportListProps) {
 
   return (
     <div className="mt-6">
-      <ExpandingSearch value={query} onChange={setQuery} />
+      <ExpandingSearch value={query} onChange={handleQueryChange} />
 
       {/* 항상 마운트해 두고 텍스트만 갱신한다(조건부 렌더 시 낭독되지 않는다). */}
       <p className="sr-only" aria-live="polite">
@@ -83,7 +107,17 @@ export function SearchableReportList({ reports }: SearchableReportListProps) {
             {visibleReports.map((report) => (
               <li key={report.share_id}>
                 <Link
-                  href={`/report/${encodeURIComponent(report.share_id)}`}
+                  // 검색 중에는 같은 q 를 달아 상세에서 목록으로 돌아올 수 있게 한다.
+                  href={
+                    normalizedQuery === ""
+                      ? `/report/${encodeURIComponent(report.share_id)}`
+                      : {
+                          pathname: `/report/${encodeURIComponent(
+                            report.share_id
+                          )}`,
+                          query: { q: query },
+                        }
+                  }
                   className="block bg-white rounded-xl shadow-sm border border-navy-100 p-6 hover:shadow-md hover:border-navy-200 transition-all"
                 >
                   <h2 className="text-navy-900 font-semibold text-lg md:text-xl mb-2 line-clamp-2">
