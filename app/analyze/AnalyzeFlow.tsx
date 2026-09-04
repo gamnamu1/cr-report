@@ -436,7 +436,10 @@ export function AnalyzeFlow() {
     });
   }
 
-  /** ③④를 연다. 안내를 가리지 않도록 스크롤은 호출부가 정한다. */
+  /**
+   * ③④를 연다. 목업 afterCopyReady 대로 복사 성공·복사 실패·TXT 저장
+   * 세 경로 모두 카드를 열고 ③으로 스크롤한다(호출부가 모두 true 를 넘긴다).
+   */
   function unlockNext(scrollToGuide: boolean) {
     setNextUnlocked(true);
     if (!scrollToGuide) return;

@@ -34,8 +34,10 @@ const maruBuri = localFont({
 // 서버 런타임에 읽히도록 하는 효과도 함께 있다.
 export const dynamic = "force-dynamic";
 
+// 이 페이지는 ANALYZE_PUBLIC 과 무관하게 항상 색인 대상이라 robots 를 두지 않는다.
 export const metadata: Metadata = {
   title: "지금 우리는 — Critical Readers",
+  alternates: { canonical: "/declaration" },
 };
 
 /** 정본 .em — 강조색 + 굵기 600. 크기는 키우지 않는다. */
