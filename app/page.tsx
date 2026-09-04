@@ -3,6 +3,8 @@ import {
   SearchableReportList,
   type ReportListItem,
 } from "@/components/SearchableReportList";
+import { SiteFooter } from "@/components/SiteFooter";
+import { ANALYZE_PUBLIC } from "@/lib/flags";
 import {
   formatIsoDateToKorean,
   listCitizenReportsForSearch,
@@ -48,23 +50,32 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   }));
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-navy-50 via-white to-amber-50">
-      <div className="mx-auto max-w-4xl px-6 py-16">
-        {/* 아래쪽 간격은 SearchableReportList 가 소유한다(형제 마진 병합 주의). */}
-        <header className="text-center">
-          <h1 className="text-3xl md:text-4xl font-bold text-navy-900/70 mb-3">
-            C<span className={soft}>ritical</span>{" "}
-            R<span className={soft}>eaders</span>
-          </h1>
-          <p className="text-navy-700 text-base md:text-lg leading-relaxed">
-            언론은 시민을 위해 존재하며, 시민의 신뢰는 언론의 가장 소중한
-            자산이다.{" "}
-            <span className="text-[0.8em] opacity-80">- 언론윤리헌장 중에서</span>
-          </p>
-        </header>
+    // 배경 그라디언트는 이 wrapper 가 소유한다. main 에 남겨두면 풋터 영역만
+    // 흰색으로 뜬다. 세로 flex 라 내용이 짧아도 풋터가 화면 하단에 자리한다.
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-navy-50 via-white to-amber-50">
+      <main className="flex-1">
+        <div className="mx-auto max-w-4xl px-6 py-16">
+          {/* 아래쪽 간격은 SearchableReportList 가 소유한다(형제 마진 병합 주의). */}
+          <header className="text-center">
+            <h1 className="text-3xl md:text-4xl font-bold text-navy-900/70 mb-3">
+              C<span className={soft}>ritical</span>{" "}
+              R<span className={soft}>eaders</span>
+            </h1>
+            <p className="text-navy-700 text-base md:text-lg leading-relaxed">
+              언론은 시민을 위해 존재하며, 시민의 신뢰는 언론의 가장 소중한
+              자산이다.{" "}
+              <span className="text-[0.8em] opacity-80">
+                - 언론윤리헌장 중에서
+              </span>
+            </p>
+          </header>
 
-        <SearchableReportList reports={items} initialQuery={initialQuery} />
-      </div>
-    </main>
+          <SearchableReportList reports={items} initialQuery={initialQuery} />
+        </div>
+      </main>
+
+      {/* 플래그가 꺼져 있으면 홈에서는 풋터 자체를 렌더링하지 않는다. */}
+      {ANALYZE_PUBLIC && <SiteFooter analyzePublic={ANALYZE_PUBLIC} />}
+    </div>
   );
 }
