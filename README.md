@@ -138,3 +138,5 @@ critical-readers/
 ## 라이선스
 
 GNU Affero General Public License v3.0 (AGPL-3.0). `LICENSE` 파일 참고.
+
+이 사이트에는 네이버에서 제공한 마루 부리 글꼴이 적용되어 있습니다.
