@@ -48,7 +48,7 @@ export default function AnalyzePage() {
               기사 분석하기
             </h1>
             <p className="mt-[0.6rem] text-base text-navy-600">
-              기사 주소를 넣고, 분석 텍스트를 복사해 AI에 붙여넣으면 비평 리포트
+              기사 주소를 넣고, 분석 요청문을 복사해 AI에 붙여넣으면 비평 리포트
               초안이 나와요.
             </p>
           </header>

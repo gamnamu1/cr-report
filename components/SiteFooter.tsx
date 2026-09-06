@@ -13,7 +13,7 @@ const MODAL_COPY: Record<CopyState, { title: string; guide: string }> = {
   success: {
     title: "메일 주소가 복사되었어요",
     guide:
-      "쓰시는 메일을 열어 받는 사람 칸에 붙여넣고, 완성한 리포트를 보내주세요.",
+      "메일로 리포트를 보내주세요.",
   },
   failure: {
     title: "자동 복사가 안 됐어요",

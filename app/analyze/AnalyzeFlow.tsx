@@ -55,7 +55,7 @@ function messageForCode(code: unknown): string {
 }
 
 const HINT_COMPLETE =
-  "아래 내용이 실제 기사 내용과 맞는지 확인해 주세요. 잘못된 부분이 있으면 '잘못된 부분 고치기' 버튼을 눌러 수정해 주세요.";
+  "아래 내용이 기사 원문과 맞는지 확인해 주세요. 다른 곳이 있으면 '잘못된 부분 고치기' 버튼을 눌러 수정해 주세요.";
 const HINT_INCOMPLETE =
   "기사 본문은 가져왔지만 일부 정보는 확인하지 못했어요. '미확인'으로 두거나, 아는 경우에만 '잘못된 부분 고치기' 버튼을 눌러 채워 주세요.";
 
@@ -93,7 +93,7 @@ const INLINE_ERROR = "mt-[0.35rem] text-[0.88rem] font-semibold text-red-700";
 
 // ── ② 하단 복사 흐름 ────────────────────────────────────────────────
 const COPY_NOTE =
-  "아래 버튼을 누르면 기사 본문과 분석 기준(언론윤리규범, 문제적 보도관행, 잘 쓴 리포트 예시)이 담긴 분석 요청문이 복사돼요. 꽤 길지만 정상이에요.";
+  "아래 버튼을 누르면 기사 본문과 분석 기준(언론윤리규범, 문제적 보도관행, 잘 쓴 리포트 예시)이 담긴 분석 요청문이 복사돼요.";
 const KIT_LOADING_MSG = "분석 요청문을 준비하고 있어요…";
 const KIT_READY_MSG = "분석 요청문이 준비됐어요.";
 const KIT_ERROR_MSG = "분석 자료를 불러오지 못했어요. '다시 시도'를 눌러 주세요.";
@@ -307,8 +307,8 @@ export function AnalyzeFlow() {
             : content.length,
         sourceKind:
           article.source_kind === "portal" ||
-          article.source_kind === "outlet" ||
-          article.source_kind === "generic"
+            article.source_kind === "outlet" ||
+            article.source_kind === "generic"
             ? article.source_kind
             : null,
         origin: "extracted",
@@ -891,7 +891,7 @@ export function AnalyzeFlow() {
         <div aria-live="polite">
           {copyState === "copied" && (
             <div className={COPIED_BOX}>
-              <p className="font-extrabold text-navy-800">{COPIED_MSG}</p>
+              <p className="font-normal text-navy-800">{COPIED_MSG}</p>
               <div className={BTN_ROW}>
                 <button
                   type="button"
@@ -928,9 +928,7 @@ export function AnalyzeFlow() {
               1
             </span>
             <p className="text-[0.95rem]">
-              Claude, ChatGPT, Gemini 등 AI 서비스를 열어주세요. 되도록 높은 성능
-              모델을 고르고, &#39;생각하기&#39;나 &#39;추론&#39; 기능이 있으면 켜
-              주세요.
+              Claude, ChatGPT, Gemini 등 AI 서비스를 열어주세요. 가능하면 성능이 높은 모델을 선택하고, &#39;생각하기&#39;나 &#39;추론&#39; 기능이 있다면 켜 주세요.
             </p>
           </li>
           <li className={GUIDE_ITEM}>
@@ -939,10 +937,10 @@ export function AnalyzeFlow() {
             </span>
             <p className="text-[0.95rem]">
               대화창에{" "}
-              <span className="font-extrabold text-navy-900">
+              <span className="font-bold text-navy-900">
                 「지침을 따라 비평 리포트 &#39;초안&#39;을 작성해줘」
               </span>
-              라고 써주세요.
+              라고 입력해 주세요.
             </p>
           </li>
           <li className={GUIDE_ITEM}>
@@ -983,7 +981,7 @@ export function AnalyzeFlow() {
               type="checkbox"
               className="mt-[0.2rem] h-[1.2rem] w-[1.2rem] flex-none accent-navy-800"
             />
-            <span>리포트가 인용한 기사 문장이 실제 기사에 있나요?</span>
+            <span>리포트에 인용된 문장이 실제 기사에 있나요?</span>
           </label>
           <label className={CHECK_ITEM}>
             <input
@@ -1020,9 +1018,7 @@ export function AnalyzeFlow() {
         </div>
 
         <p className="mt-[1.1rem] border-l-[3px] border-navy-200 py-[0.2rem] pl-4 text-[0.95rem] text-navy-700">
-          리포트에 언급된 언론윤리규범이 어떤 저널리즘의 원칙과 가치를 지키기 위한
-          것인지, 규범이 지켜지지 않을 때 어떤 가치가 함께 흔들릴 수 있는지 생각해
-          보세요. 그 생각을 덧붙이는 것이 이 프로젝트를 완성시킵니다.
+          리포트에 인용된 언론윤리규범이 어떤 저널리즘 원칙을 구체화한 것인지, 그 원칙이 어떤 가치에 뿌리를 두고 있는지 생각해 보세요. 그 생각을 한 줄 덧붙이면, 리포트가 비로소 완성됩니다.
         </p>
         <p className="mt-[1.2rem] text-[0.92rem] text-navy-600">
           완성한 리포트를 더 널리 알리고 싶다면, 아래 &#39;리포트 보내기&#39; 메일로
@@ -1043,8 +1039,7 @@ export function AnalyzeFlow() {
             기사 내용이 어딘가에 저장되나요?
           </summary>
           <p className="mt-[0.45rem] text-[0.88rem] text-navy-600">
-            아니요. 분석 요청문을 만들어 전할 뿐, 기사 주소와 본문은 서버에 남지
-            않아요.
+            아니요. 분석 요청문을 만들어 전할 뿐, 기사 본문은 서버에 남지 않아요.
           </p>
         </details>
         <details className="px-[0.1rem] py-2">
@@ -1052,8 +1047,7 @@ export function AnalyzeFlow() {
             어떤 AI가 제일 잘하나요?
           </summary>
           <p className="mt-[0.45rem] text-[0.88rem] text-navy-600">
-            모델 이름이 자주 바뀌어서 딱 하나를 말씀드리긴 어려워요. 각 서비스에서
-            가장 높은 등급의 모델을 고르시면 됩니다.
+            모델 이름이 자주 바뀌어서 딱 하나를 말씀드리긴 어려워요. 각 서비스에서 가장 높은 등급의 모델을 고르시면 됩니다.
           </p>
         </details>
         <details className="px-[0.1rem] py-2">
@@ -1061,9 +1055,7 @@ export function AnalyzeFlow() {
             왜 &#39;초안&#39;이라고 부르나요?
           </summary>
           <p className="mt-[0.45rem] text-[0.88rem] text-navy-600">
-            AI가 쓴 글이 자연스러워 보여도, 내용까지 정확하다는 뜻은 아니에요. 사실
-            확인은 사람이 해야 해요. 시민의 검수를 거쳐야 비로소 리포트가
-            완성됩니다.
+            AI가 쓴 글이 자연스러워 보여도, 내용까지 정확하다는 뜻은 아니에요. 사실 확인은 사람이 해야 해요. 시민의 검수를 거쳐야 비로소 리포트가 완성됩니다.
           </p>
         </details>
       </section>
