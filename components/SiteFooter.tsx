@@ -13,7 +13,7 @@ const MODAL_COPY: Record<CopyState, { title: string; guide: string }> = {
   success: {
     title: "메일 주소가 복사되었어요",
     guide:
-      "메일로 리포트를 보내주세요.",
+      "완성한 리포트를 보내 주세요. 아카이브에 올려 함께 공유할 수 있어요.",
   },
   failure: {
     title: "자동 복사가 안 됐어요",
@@ -36,14 +36,15 @@ function itemClass(active: boolean): string {
 
 interface SiteFooterProps {
   /**
-   * 서버에서 읽은 ANALYZE_PUBLIC 값. false 면 '기사 분석하기' 링크를 렌더링하지
+   * 서버에서 읽은 ANALYZE_PUBLIC 값. false 면 '리포트 만들기' 링크를 렌더링하지
    * 않는다. 이 컴포넌트가 받는 prop 은 이것 하나뿐이다.
    */
   analyzePublic: boolean;
 }
 
 /**
- * 사이트 공통 풋터. 항목 3개를 가운데 정렬로 배치한다. © 표기는 없다.
+ * 사이트 공통 풋터. 항목 4개(ANALYZE_PUBLIC 이 꺼지면 3개)를 가운데 정렬로
+ * 배치한다. © 표기는 없다.
  *
  * '리포트 보내기'는 페이지 이동이 아니므로 button 이다. mailto: 를 열지 않고
  * 받는 주소를 클립보드에 복사한 뒤 안내 모달을 띄운다.
@@ -73,19 +74,27 @@ export function SiteFooter({ analyzePublic }: SiteFooterProps) {
   return (
     // 폭은 홈 본문과 같은 max-w-4xl 로 맞춘다. 구분선이 본문 칼럼과 나란해야
     // 하므로 화면 끝까지 늘리지 않는다.
-    <footer className="mx-auto mt-12 w-full max-w-4xl px-6 pb-10">
+    <footer className="mx-auto mt-0 w-full max-w-4xl px-6 pb-10">
       {/* 구분선·간격·글자 크기는 목업 analyze-mockup-final.html 104행 footer 규칙. */}
       <nav
         aria-label="사이트 안내"
         className="flex flex-wrap items-center justify-center gap-9 border-t border-navy-100 pt-[1.6rem] text-[0.92rem]"
       >
+        <Link
+          href="/"
+          aria-current={pathname === "/" ? "page" : undefined}
+          className={itemClass(pathname === "/")}
+        >
+          리포트 읽기
+        </Link>
+
         {analyzePublic && (
           <Link
             href="/analyze"
             aria-current={pathname === "/analyze" ? "page" : undefined}
             className={itemClass(pathname === "/analyze")}
           >
-            기사 분석하기
+            리포트 만들기
           </Link>
         )}
 
@@ -177,7 +186,7 @@ function MailModal({ state, onClose }: MailModalProps) {
         aria-modal="true"
         aria-labelledby="site-footer-mail-title"
         aria-describedby="site-footer-mail-guide"
-        className="w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-2xl animate-in fade-in zoom-in-95 duration-200 motion-reduce:animate-none"
+        className="w-full max-w-xs rounded-2xl bg-white p-5 text-center shadow-2xl animate-in fade-in zoom-in-95 duration-200 motion-reduce:animate-none"
       >
         <h2
           id="site-footer-mail-title"
@@ -202,7 +211,7 @@ function MailModal({ state, onClose }: MailModalProps) {
           ref={confirmRef}
           type="button"
           onClick={onClose}
-          className="mt-6 w-full rounded-xl bg-navy-900 px-6 py-3 font-medium text-white outline-none transition-colors hover:bg-navy-800 focus-visible:ring-2 focus-visible:ring-navy-300 focus-visible:ring-offset-2 motion-reduce:transition-none"
+          className="mt-5 w-full rounded-xl border border-navy-200 bg-white px-6 py-2.5 font-medium text-navy-700 outline-none transition-colors hover:border-navy-500 hover:text-navy-900 focus-visible:ring-2 focus-visible:ring-navy-300 focus-visible:ring-offset-2 motion-reduce:transition-none"
         >
           확인
         </button>

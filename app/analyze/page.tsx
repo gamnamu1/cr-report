@@ -16,16 +16,16 @@ export const dynamic = "force-dynamic";
  */
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: "기사 분석하기 — Critical Readers",
+    title: "리포트 만들기 — Critical Readers",
     alternates: { canonical: "/analyze" },
     ...(ANALYZE_PUBLIC ? {} : { robots: { index: false, follow: false } }),
   };
 }
 
 /**
- * 「기사 분석하기」 페이지.
+ * 「리포트 만들기」 페이지.
  *
- * ANALYZE_PUBLIC 은 풋터의 '기사 분석하기' 링크 노출만 제어한다.
+ * ANALYZE_PUBLIC 은 풋터의 '리포트 만들기' 링크 노출만 제어한다.
  * 이 페이지 자체는 플래그와 무관하게 직접 URL 로 접근할 수 있다.
  * 상태·이벤트가 필요한 ①②카드는 AnalyzeFlow(클라이언트)로 분리했다.
  */
@@ -45,7 +45,7 @@ export default function AnalyzePage() {
 
           <header>
             <h1 className="text-[1.5rem] font-extrabold tracking-[-0.01em] text-navy-800/[0.66] sm:text-[1.85rem]">
-              기사 분석하기
+              리포트 만들기
             </h1>
             <p className="mt-[0.6rem] text-base text-navy-600">
               기사 주소를 넣고, 분석 요청문을 복사해 AI에 붙여넣으면 비평 리포트

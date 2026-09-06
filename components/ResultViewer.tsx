@@ -473,14 +473,12 @@ export function ResultViewer({ result, listHref = "/" }: ResultViewerProps) {
 
                   const text =
                     `${shareMessage}\n\n` +
-                    `매체: ${result.article_info.publisher || '미확인'}\n` +
-                    `기자: ${result.article_info.journalist || '미확인'}\n\n` +
                     `▶ 리포트 보기\n` +
                     `${shareUrl}`;
 
                   navigator.clipboard.writeText(text).then(() => {
                     alert(
-                      '기사 정보와 공유 링크가 클립보드에 복사되었습니다.\n' +
+                      '공유 문구와 링크가 클립보드에 복사되었습니다.\n' +
                       '카카오톡 대화창에 붙여넣어 공유해주세요.'
                     );
                   }).catch(() => {
