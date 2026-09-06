@@ -48,8 +48,8 @@ export default function DeclarationPage() {
     // 세션 1-A 홈과 같은 골격. 내용이 짧아도 풋터가 화면 하단에 자리한다.
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-navy-50 via-white to-amber-50">
       <main className="flex-1">
-        {/* 정본 .wrap — 행장 38rem, 상단 4rem, 하단 5rem, 좌우 1.5rem(≤640px 1.25rem) */}
-        <div className="mx-auto max-w-[38rem] px-5 pb-20 pt-16 sm:px-6">
+        {/* 정본 .wrap — 행장 43rem, 상단 4rem, 하단 5rem, 좌우 1.5rem(≤640px 1.25rem) */}
+        <div className="mx-auto max-w-[43rem] px-5 pb-20 pt-16 sm:px-6">
           {/* 정본 .back — 아래 여백 2.6rem */}
           <Link
             href="/"
@@ -69,8 +69,8 @@ export default function DeclarationPage() {
               // --foreground 는 거의 검정이라 여기서 명시해야 정본과 같아진다.
               "text-navy-800",
               "font-normal leading-[2.10] tracking-[-0.020em]",
-              // ≤640px 에서 1px 줄인다(정본 미디어쿼리).
-              "text-[16.5px] sm:text-[17.5px]",
+              // ≤640px 에서 1.5px 줄인다(정본 미디어쿼리).
+              "text-[18.5px] sm:text-[20px]",
               "break-keep break-words",
               "[&>p]:mb-[1.5em] [&>p:last-child]:mb-0",
             ].join(" ")}

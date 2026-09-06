@@ -61,11 +61,23 @@ export async function generateMetadata({
       type: "article",
       url: canonicalUrl,
       siteName: "Critical Readers",
+      // openGraph 를 정의하면 루트 metadata 의 것을 상속하지 않고 통째로
+      // 대체하므로, locale·images 를 여기서도 명시한다.
+      locale: "ko_KR",
+      images: [
+        {
+          url: "/og-image.jpg",
+          width: 1200,
+          height: 630,
+          alt: "Critical Readers",
+        },
+      ],
     },
     twitter: {
-      card: "summary",
+      card: "summary_large_image",
       title: shortTitle,
       description,
+      images: ["/og-image.jpg"],
     },
   };
 }

@@ -54,7 +54,7 @@ export function DeclarationAudio() {
           // ExpandingSearch 와 같이 transition 단축 속성을 통째로 지정한다.
           "[transition:border-color_150ms,color_150ms] motion-reduce:[transition:none]",
           "hover:border-navy-500 hover:text-navy-800",
-          "aria-pressed:border-navy-800 aria-pressed:bg-navy-800 aria-pressed:text-white",
+          "aria-pressed:border-navy-300 aria-pressed:bg-navy-50 aria-pressed:text-navy-700",
           "outline-none focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-amber-500",
         ].join(" ")}
       >
