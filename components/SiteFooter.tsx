@@ -75,10 +75,10 @@ export function SiteFooter({ analyzePublic }: SiteFooterProps) {
     // 폭은 홈 본문과 같은 max-w-4xl 로 맞춘다. 구분선이 본문 칼럼과 나란해야
     // 하므로 화면 끝까지 늘리지 않는다.
     <footer className="mx-auto mt-0 w-full max-w-4xl px-6 pb-10">
-      {/* 구분선·간격·글자 크기는 목업 analyze-mockup-final.html 104행 footer 규칙. */}
+      {/* 640px 이상은 항목 간격 2.25rem, 미만은 1rem + 라벨 축약(한 줄 유지). */}
       <nav
         aria-label="사이트 안내"
-        className="flex flex-wrap items-center justify-center gap-9 border-t border-navy-100 pt-[1.6rem] text-[0.92rem]"
+        className="flex flex-wrap items-center justify-center gap-x-4 gap-y-3 sm:gap-9 whitespace-nowrap border-t border-navy-100 pt-[1.6rem] text-[0.92rem]"
       >
         <Link
           href="/"
@@ -91,10 +91,12 @@ export function SiteFooter({ analyzePublic }: SiteFooterProps) {
         {analyzePublic && (
           <Link
             href="/analyze"
+            aria-label="리포트 만들기"
             aria-current={pathname === "/analyze" ? "page" : undefined}
             className={itemClass(pathname === "/analyze")}
           >
-            리포트 만들기
+            <span className="sm:hidden">만들기</span>
+            <span className="hidden sm:inline">리포트 만들기</span>
           </Link>
         )}
 
@@ -102,17 +104,21 @@ export function SiteFooter({ analyzePublic }: SiteFooterProps) {
           ref={reportButtonRef}
           type="button"
           onClick={handleReportClick}
+          aria-label="리포트 보내기"
           className={itemClass(false)}
         >
-          리포트 보내기
+          <span className="sm:hidden">보내기</span>
+          <span className="hidden sm:inline">리포트 보내기</span>
         </button>
 
         <Link
           href="/declaration"
+          aria-label="지금 우리는"
           aria-current={pathname === "/declaration" ? "page" : undefined}
           className={itemClass(pathname === "/declaration")}
         >
-          지금 우리는
+          <span className="sm:hidden">우리는</span>
+          <span className="hidden sm:inline">지금 우리는</span>
         </Link>
       </nav>
 
