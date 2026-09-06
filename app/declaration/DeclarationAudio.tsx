@@ -40,7 +40,7 @@ export function DeclarationAudio() {
 
   return (
     <>
-      {/* 정본 .audio-btn — 지름 1.68rem, 아이콘 0.84rem, 재생 중 navy-800 반전 */}
+      {/* 정본 .audio-btn — 지름 1.68rem, 아이콘 0.84rem, 재생 중 약한 navy 표시 */}
       <button
         type="button"
         onClick={handleToggle}

@@ -157,7 +157,7 @@ export default function DeclarationPage() {
       </main>
 
       {/* 홈과 달리 플래그와 무관하게 항상 렌더링한다. false 면 풋터 안에서
-          '기사 분석하기' 링크만 빠진다. */}
+          '리포트 만들기' 링크만 빠진다. */}
       <SiteFooter analyzePublic={ANALYZE_PUBLIC} />
     </div>
   );
