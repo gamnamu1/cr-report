@@ -57,7 +57,7 @@ function messageForCode(code: unknown): string {
 const HINT_COMPLETE =
   "아래 내용이 기사 원문과 맞는지 확인해 주세요. 다른 곳이 있으면 '잘못된 부분 고치기' 버튼을 눌러 수정해 주세요.";
 const HINT_INCOMPLETE =
-  "기사 본문은 가져왔지만 일부 정보는 확인하지 못했어요. '미확인'으로 두거나, 아는 경우에만 '잘못된 부분 고치기' 버튼을 눌러 채워 주세요.";
+  "기사 본문은 가져왔지만 일부 정보는 확인하지 못했어요. '미확인'으로 두거나, 확인할 수 있는 경우 '잘못된 부분 고치기' 버튼을 눌러 채워 주세요.";
 
 const LOADING_MSG = "기사를 불러오고 있어요…";
 const LOADING_SLOW_MSG =
