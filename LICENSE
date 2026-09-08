@@ -1,8 +1,8 @@
 ================================================================================
-CR-Check: Citizen-led News Article Quality Assessment Platform
+CR-Report: Citizen-Reviewed News Criticism Archive
 ================================================================================
 
-Copyright (C) 2025 CR Project Contributors
+Copyright (C) 2025-2026 CR Project Contributors
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as published
@@ -19,27 +19,31 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 
 ================================================================================
-WHY AGPL FOR CR-CHECK?
+WHY AGPL FOR CR-REPORT?
 ================================================================================
 
-CR-Check는 시민 주도 언론 비평 플랫폼으로, 다음의 핵심 가치를 보호하기 위해
+CR-Report는 시민이 검수한 뉴스 비평 리포트를 모아 공개하고, 시민이 직접
+리포트를 만들 수 있도록 돕는 아카이브입니다. 다음의 핵심 가치를 지키기 위해
 GNU Affero General Public License v3.0 (AGPL-3.0)을 채택했습니다:
 
-1. 평가 기준의 투명성과 무결성 보장
-   - 모든 노드가 평가 기준을 공개하여 조작을 방지합니다
-   - 수정된 버전도 반드시 소스 코드를 공개해야 합니다
+1. 비평 기준의 공개성
+   - 어떤 규범과 관행 지도로 기사를 살폈는지가 코드와 함께 공개됩니다
+   - 기준을 감춘 채 결과만 내놓으면, 시민은 그 비평이 옳은지 따져볼 수 없습니다
 
-2. 네트워크 서비스 보호
-   - 웹 서비스로 배포하는 경우에도 소스 공개 의무가 적용됩니다
-   - 특정 세력의 독점적 사용이나 악용을 방지합니다
+2. 네트워크 서비스에서도 수정 내용의 공개성 유지
+   - 수정한 프로그램을 네트워크 서비스로 제공하는 경우에도 AGPL이 정한
+     범위에서 이용자가 대응 소스에 접근할 수 있어야 합니다
+   - 서비스를 비공개 수정본으로 운영하면서 이용자에게 변경 내용을 감추는 것을
+     어렵게 합니다
 
-3. 시민 주도 생태계 보호
-   - 누구나 자유롭게 사용, 수정, 배포할 수 있습니다
-   - 개선 사항은 커뮤니티로 환원되어 함께 발전합니다
+3. 시민 주도 생태계
+   - 누구나 자유롭게 사용·수정·배포할 수 있습니다
+   - 다른 분야·다른 언어권의 판본을 배포하거나 네트워크 서비스로 제공하는
+     경우에도 AGPL이 요구하는 범위에서 수정 소스가 공개됩니다
 
-4. 언론 개혁 운동의 지속 가능성
-   - 탈중앙화된 네트워크를 통해 검열과 통제를 회피합니다
-   - 시민 개발자들의 자발적 참여를 보장합니다
+4. 아카이브의 지속 가능성
+   - 원본 사이트가 멈추더라도 누구나 공개된 소스를 바탕으로 이어갈 수 있습니다
+   - 특정 운영 주체에만 의존하지 않는 지속 가능한 기반을 남깁니다
 
 AGPL은 단순한 법적 도구가 아니라, CR 프로젝트가 추구하는 민주적 가치와
 시민 주도성을 실현하는 핵심 장치입니다.
@@ -74,17 +78,32 @@ you MUST:
 3. Include this notice in a visible location on your web interface
 
 Example notice:
-  "This service runs a modified version of CR-Check. You can obtain the
+  "This service runs a modified version of CR-Report. You can obtain the
    source code at: [YOUR_REPOSITORY_URL]"
+
+
+================================================================================
+THIRD-PARTY ASSETS
+================================================================================
+
+This repository includes the MaruBuri typeface (public/fonts/), provided by
+NAVER Corporation and redistributable under its own license terms. The
+typeface is not covered by the AGPL-3.0 license above.
 
 
 ================================================================================
 CONTACT
 ================================================================================
 
-CR Project
-GitHub: https://github.com/gamnamu1/cr-project
-Repository: https://github.com/gamnamu1/cr-check
+CR Project — 시민 주도 언론 개혁 프로젝트
+
+  cr-project   설계도·선언문              https://github.com/gamnamu1/cr-project
+  cr-check     분석 엔진(리포트 생성)      https://github.com/gamnamu1/cr-check
+  cr-report    리포트 아카이브(이 저장소)   https://github.com/gamnamu1/cr-report
+
+이 저장소의 `/analyze`(리포트 만들기)는 기사를 불러올 때 cr-check 백엔드의
+`/extract` 엔드포인트를 호출합니다. 별도 설정이 없으면 CR 이 운영하는
+백엔드를 쓰므로, 자기 백엔드로 운영하려면 cr-check 도 함께 필요합니다.
 
 
 ================================================================================
