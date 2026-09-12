@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
 import { ExpandingSearch } from "./ExpandingSearch";
 
@@ -20,8 +21,28 @@ export interface ReportListItem {
 interface SearchableReportListProps {
   /** created_at 내림차순으로 정렬된 전체 목록. */
   reports: ReportListItem[];
-  /** ?q= 로 진입했을 때의 초기 검색어. 서버가 searchParams 에서 읽어 내려준다. */
-  initialQuery?: string;
+}
+
+/**
+ * 주소창의 `q` 를 읽어 부모의 setter 만 호출하는 자식. 아무것도 렌더하지 않는다.
+ *
+ * 홈이 정적 생성되므로 서버는 더 이상 searchParams 를 읽지 않는다. useSearchParams
+ * 는 Suspense 경계 안에서만 쓸 수 있고 경계 안쪽은 정적 HTML 에 담기지 않으므로,
+ * 목록 본체가 아니라 이 빈 컴포넌트만 경계 안에 둔다. 목록 본체를 안에 넣으면
+ * 정적 HTML 에서 리포트 목록이 사라진다.
+ */
+function QuerySync({ onQuery }: { onQuery: (next: string) => void }) {
+  const searchParams = useSearchParams();
+  const raw = searchParams.get("q") ?? "";
+  // 빈 값·공백뿐인 값은 검색어로 취급하지 않는다(서버가 하던 정규화와 같다).
+  const q = raw.trim() === "" ? "" : raw;
+
+  // 최초 마운트뿐 아니라 q 가 바뀔 때마다 동기화한다.
+  useEffect(() => {
+    onQuery(q);
+  }, [q, onQuery]);
+
+  return null;
 }
 
 /**
@@ -34,11 +55,15 @@ interface SearchableReportListProps {
  * app/page.tsx 의 header 에 margin 을 두면 형제 마진 병합으로
  * 인용문↔검색창 간격이 벌어진다.
  */
-export function SearchableReportList({
-  reports,
-  initialQuery = "",
-}: SearchableReportListProps) {
-  const [query, setQuery] = useState(initialQuery);
+export function SearchableReportList({ reports }: SearchableReportListProps) {
+  const [query, setQuery] = useState("");
+
+  // 주소창의 q 를 state 에 반영한다. 같은 값이면 아무 일도 하지 않는다 —
+  // handleQueryChange 가 replaceState 로 쓴 값이 useSearchParams 에 반영돼
+  // 돌아올 수 있는데, 그때 state 를 다시 쓰면 타이핑 중 입력이 되돌아간다.
+  const syncQueryFromUrl = useCallback((next: string) => {
+    setQuery((prev) => (prev === next ? prev : next));
+  }, []);
 
   // 필터와 이후 판단은 모두 이 값 하나만 본다.
   const normalizedQuery = query.trim().toLowerCase();
@@ -90,6 +115,10 @@ export function SearchableReportList({
 
   return (
     <div className="mt-6">
+      <Suspense fallback={null}>
+        <QuerySync onQuery={syncQueryFromUrl} />
+      </Suspense>
+
       <ExpandingSearch value={query} onChange={handleQueryChange} />
 
       {/* 항상 마운트해 두고 텍스트만 갱신한다(조건부 렌더 시 낭독되지 않는다). */}

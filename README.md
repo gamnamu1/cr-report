@@ -37,9 +37,13 @@ Vercel 프로젝트와 로컬 `.env.local` 양쪽에 아래 값을 설정한다.
 | `NEXT_PUBLIC_SITE_URL` | ✓ | 사이트 정식 도메인 (`https://cr-report.kr`) |
 | `EXTRACT_API_KEY` | 기사 자동 불러오기 사용 시 | cr-check `/extract` 호출용 서버 비밀키 |
 | `EXTRACT_API_BASE` | | cr-check 백엔드의 베이스 URL. 미설정 시 CR 운영 백엔드로 폴백 |
-| `ANALYZE_PUBLIC` | | `"true"` 이면 홈 풋터 노출·`/analyze` 색인·sitemap 등재. 직접 URL 접근은 항상 가능 |
+| `ANALYZE_PUBLIC` | | `"true"` 이면 홈 풋터 노출·`/analyze` 색인·sitemap 등재. 직접 URL 접근은 항상 가능. **빌드 시점 값**이라 바꾸면 재배포해야 한다 |
 
 `anon` 키로만 접근하며, 테이블은 RLS 로 SELECT 만 허용된다.
+
+`SUPABASE_URL` 과 `SUPABASE_ANON_KEY` 는 런타임뿐 아니라 **빌드에도 필요하다.**
+목록·상세·sitemap 을 빌드 시점에 생성하면서 Supabase 를 읽기 때문에, 값이
+없거나 조회가 실패하면 빌드가 실패한다.
 
 `SUPABASE_URL` 은 백엔드 주소이고 `NEXT_PUBLIC_SITE_URL` 은 이 사이트의 공개
 도메인이다. 이름이 비슷하니 혼동하지 않는다.
@@ -59,6 +63,10 @@ Vercel 프로젝트와 로컬 `.env.local` 양쪽에 아래 값을 설정한다.
 허용된다. 제작 중에는 비워 두고 공개 시점에 설정한다.
 (`/analyze` 와 `/declaration` 자체의 풋터는 이 플래그와 무관하게 렌더된다.)
 
+이 셋을 읽는 화면이 모두 정적 생성되므로 값은 **빌드 시점에 굳는다.** 값을
+바꾸면 재배포해야 반영된다. 값을 설정하지 않은 Preview 배포에서 홈 풋터가
+보이지 않고 `/analyze` 가 noindex 로 빌드되는 것은 정상이다.
+
 ## 도메인
 
 정식 도메인은 **https://cr-report.kr** 이다.
@@ -74,6 +82,11 @@ Vercel 프로젝트와 로컬 `.env.local` 양쪽에 아래 값을 설정한다.
 기준값은 `NEXT_PUBLIC_SITE_URL` 환경변수 하나이며, 코드에서는
 [`lib/site.ts`](./lib/site.ts) 가 이를 단일 진실 공급원으로 감싼다.
 환경변수가 비어 있으면 `lib/site.ts` 의 `DEFAULT_SITE_URL` 로 폴백한다.
+
+리포트 상세의 canonical·OG `url` 도 접속 호스트를 보지 않고 `SITE_URL` 만
+쓴다. 따라서 `NEXT_PUBLIC_SITE_URL` 이 비어 있으면 접속한 주소가 아니라
+`DEFAULT_SITE_URL`(`https://cr-report.kr`)이 canonical 이 된다. 프로덕션은 이
+값이 설정돼 있어 차이가 없다.
 
 ## 데이터 소스
 
@@ -123,11 +136,15 @@ Supabase 테이블 `citizen_reports` 한 행이 리포트 한 건을 완전하�
 - `POST /api/extract` — cr-check 백엔드 `/extract` 로의 프록시. 비밀키를
   서버에서만 붙여 전달하고, 클라이언트 IP 별 분당 요청 수를 제한한다
   (인스턴스 로컬 best-effort — 외부 저장소를 쓰지 않으므로 전역 제한은 아니다)
-- `GET /api/kit` — 분석 요청문에 붙일 자료(규범 원문·관행 지도·예시 리포트)를
-  런타임에 내려준다. 번들 크기를 줄이기 위한 분리이며 보안 경계는 아니다
+- `GET /api/kit` — 분석 요청문에 붙일 자료를 정적 응답으로 제공한다. 번들 크기를 줄이기 위한 분리이며 보안 경계는 아니다.
 
-목록·상세는 서버 컴포넌트에서 Supabase REST API를 `cache: "no-store"` 로
-호출하므로, 대시보드에서 새 리포트를 추가하면 다음 요청부터 바로 반영된다.
+목록·상세·sitemap 은 빌드 시점에 생성되고 60초 주기로 재검증된다(ISR).
+대시보드에 새 리포트를 추가하면 **재배포 없이 새 주소에서 열린다** — 빌드에
+없던 `share_id` 는 첫 요청에서 생성된 뒤 캐시된다.
+반면 목록과 이미 생성된 리포트 본문의 갱신은 요청이 유발한다. 마지막 생성으로
+부터 60초가 지난 뒤 들어온 요청이 재검증을 시작하고, **그 요청은 이전 내용을
+받는다. 새 내용은 그 이후 요청부터 보인다.** 방문이 없으면 갱신도 일어나지
+않는다.
 
 ## 로컬 개발
 

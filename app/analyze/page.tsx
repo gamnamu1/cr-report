@@ -6,21 +6,16 @@ import { ANALYZE_PUBLIC } from "@/lib/flags";
 
 import { AnalyzeFlow } from "./AnalyzeFlow";
 
-// 서버 환경변수를 읽으므로 반드시 둔다. 없으면 정적 프리렌더돼 값이 굳는다.
-export const dynamic = "force-dynamic";
-
 /**
- * 정적 `export const metadata` 를 쓰지 않는다 — 빌드 시점에 고정돼
- * ANALYZE_PUBLIC 전환이 반영되지 않을 수 있다.
+ * 정적 metadata 다. ANALYZE_PUBLIC 의 robots 분기는 빌드 시점에 평가되므로,
+ * 값을 바꾸면 재배포해야 반영된다(lib/flags.ts 참고).
  * canonical 은 홈과 같은 상대 경로 방식이며 layout.tsx 의 metadataBase 로 해석된다.
  */
-export async function generateMetadata(): Promise<Metadata> {
-  return {
-    title: "리포트 만들기 — Critical Readers",
-    alternates: { canonical: "/analyze" },
-    ...(ANALYZE_PUBLIC ? {} : { robots: { index: false, follow: false } }),
-  };
-}
+export const metadata: Metadata = {
+  title: "리포트 만들기 — Critical Readers",
+  alternates: { canonical: "/analyze" },
+  ...(ANALYZE_PUBLIC ? {} : { robots: { index: false, follow: false } }),
+};
 
 /**
  * 「리포트 만들기」 페이지.

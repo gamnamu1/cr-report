@@ -398,7 +398,7 @@ export function AnalyzeFlow() {
     const gen = ++kitGenRef.current;
     setKitState("loading");
     try {
-      const res = await fetch("/api/kit", { cache: "no-store" });
+      const res = await fetch("/api/kit");
       const data: unknown = res.ok ? await res.json().catch(() => null) : null;
       const k = data as Partial<Kit> | null;
       if (gen !== kitGenRef.current) return; // reset 등으로 세대가 바뀌었으면 버린다

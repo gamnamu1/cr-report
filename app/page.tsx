@@ -14,7 +14,7 @@ import {
 // h1 전체 농도 text-navy-900/70 (아래 h1 태그). 농도는 색상 알파라 서로 독립적이다.
 const soft = "text-[0.85em] text-navy-900/55";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export const metadata: Metadata = {
   // 접속 호스트와 무관하게 정식 도메인 하나로 색인을 모은다.
@@ -24,18 +24,11 @@ export const metadata: Metadata = {
   },
 };
 
-interface HomePageProps {
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
-}
-
-export default async function HomePage({ searchParams }: HomePageProps) {
+// searchParams 를 서버에서 읽으면 라우트 전체가 동적이 된다. 검색어 q 는
+// SearchableReportList 가 클라이언트에서 읽는다.
+export default async function HomePage() {
   // 목록 조회는 q 와 무관하게 항상 전체다. 필터는 클라이언트에서만 일어난다.
   const reports = await listCitizenReportsForSearch();
-
-  const { q } = await searchParams;
-  const rawQuery = Array.isArray(q) ? q[0] : q;
-  // 빈 값·공백뿐인 값은 초기 검색어로 취급하지 않는다.
-  const initialQuery = rawQuery && rawQuery.trim() !== "" ? rawQuery : "";
 
   // 게재일 포맷은 서버에서 끝낸다. 클라이언트 컴포넌트가 lib/supabase 를
   // 런타임 import 하지 않도록 문자열로 만들어 내려보낸다.
@@ -70,7 +63,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             </p>
           </header>
 
-          <SearchableReportList reports={items} initialQuery={initialQuery} />
+          <SearchableReportList reports={items} />
         </div>
       </main>
 

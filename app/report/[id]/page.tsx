@@ -1,29 +1,30 @@
-import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
 import { ResultViewer } from "@/components/ResultViewer";
 import { truncateShareTitle } from "@/lib/shareTitle";
-import { SITE_URL_FROM_ENV } from "@/lib/site";
-import { getCitizenReport, toAnalysisResult } from "@/lib/supabase";
+import { SITE_URL } from "@/lib/site";
+import {
+  getCitizenReport,
+  listCitizenReports,
+  toAnalysisResult,
+} from "@/lib/supabase";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 interface ReportPageProps {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
-async function resolveBaseUrl(): Promise<string> {
-  // 정식 도메인이 설정돼 있으면 접속 호스트와 무관하게 그 값을 쓴다.
-  // vercel.app 과 cr-report.kr 이 같은 리포트를 각각 색인하는 것을 막는다.
-  if (SITE_URL_FROM_ENV) return SITE_URL_FROM_ENV;
-
-  const h = await headers();
-  const host =
-    h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
-  const proto = h.get("x-forwarded-proto") ?? "https";
-  return `${proto}://${host}`;
+/**
+ * 게시된 리포트를 빌드 시점에 미리 생성한다.
+ *
+ * dynamicParams 기본값(true)을 그대로 두므로, 여기 없는 새 share_id 도
+ * 첫 요청에서 생성돼 열린다. 목록을 여기 고정하는 것이 아니다.
+ */
+export async function generateStaticParams() {
+  const reports = await listCitizenReports();
+  return reports.map((report) => ({ id: report.share_id }));
 }
 
 export async function generateMetadata({
@@ -46,8 +47,10 @@ export async function generateMetadata({
     ? `${publisher} 기사에 대한 시민 비평 리포트`
     : "뉴스 기사에 대한 시민 비평 리포트";
 
-  const baseUrl = await resolveBaseUrl();
-  const canonicalUrl = `${baseUrl}/report/${encodeURIComponent(id)}`;
+  // headers() 를 읽으면 라우트가 동적이 되므로 정식 도메인 상수를 쓴다.
+  // NEXT_PUBLIC_SITE_URL 이 비어 있으면 접속 호스트가 아니라 DEFAULT_SITE_URL
+  // 이 canonical 이 된다(프로덕션은 환경변수가 설정돼 있어 차이가 없다).
+  const canonicalUrl = `${SITE_URL}/report/${encodeURIComponent(id)}`;
 
   return {
     title: `[Critical Readers] ${fullTitle}`,
@@ -82,10 +85,7 @@ export async function generateMetadata({
   };
 }
 
-export default async function ReportPage({
-  params,
-  searchParams,
-}: ReportPageProps) {
+export default async function ReportPage({ params }: ReportPageProps) {
   const { id } = await params;
 
   const row = await getCitizenReport(id);
@@ -93,14 +93,8 @@ export default async function ReportPage({
 
   const result = toAnalysisResult(row);
 
-  // 목록에서 검색어를 달고 들어왔으면 "리포트 목록으로" 도 같은 검색어로 되돌린다.
+  // searchParams 를 서버에서 읽으면 라우트가 동적이 된다. "리포트 목록으로" 가
+  // 검색어를 되돌리는 일은 ResultViewer 가 클라이언트에서 q 를 읽어 처리한다.
   // canonical·공유 URL 은 q 없이 그대로 둔다(generateMetadata 참고).
-  const { q } = await searchParams;
-  const rawQuery = Array.isArray(q) ? q[0] : q;
-  const listHref =
-    rawQuery && rawQuery.trim() !== ""
-      ? `/?${new URLSearchParams({ q: rawQuery }).toString()}`
-      : "/";
-
-  return <ResultViewer result={result} listHref={listHref} />;
+  return <ResultViewer result={result} />;
 }
