@@ -4,8 +4,9 @@ import { ANALYZE_PUBLIC } from "@/lib/flags";
 import { SITE_URL } from "@/lib/site";
 import { listCitizenReports } from "@/lib/supabase";
 
-// 리포트 목록은 Supabase 를 매 요청 조회하므로 정적 생성하지 않는다.
-export const dynamic = "force-dynamic";
+// 빌드 시점에 생성하고 60초마다 재검증한다. 재검증은 그 뒤 들어온 요청이
+// 유발하며, 그 요청은 이전 sitemap 을 받는다.
+export const revalidate = 60;
 
 function toLastModified(iso: string | null | undefined): Date | undefined {
   if (!iso) return undefined;
@@ -14,11 +15,9 @@ function toLastModified(iso: string | null | undefined): Date | undefined {
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  // Supabase 가 실패해도 sitemap 자체는 응답한다 (홈만 담긴 채로).
-  const reports = await listCitizenReports().catch((e) => {
-    console.error("sitemap: Supabase fetch failed", e);
-    return [];
-  });
+  // 조회 오류를 0건으로 삼키지 않는다. 재검증 중 실패하면 Next 가 직전
+  // sitemap 을 계속 제공하고, 빌드 시점에 실패하면 빌드가 실패한다.
+  const reports = await listCitizenReports();
 
   const entries: MetadataRoute.Sitemap = [
     {

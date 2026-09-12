@@ -27,6 +27,13 @@ export function ExpandingSearch({ value, onChange }: ExpandingSearchProps) {
   // 시작하는 경우에는 포커스를 옮기지 않는다.
   const focusOnExpandRef = useRef(false);
 
+  // 홈이 정적 생성이라 ?q= 는 서버가 아니라 마운트 직후 클라이언트에서 도착한다.
+  // 위 초기화는 마운트 때 한 번뿐이라 그 값을 놓치므로, 값이 생기면 그때 펼친다.
+  // (ESC·X 는 value 를 "" 로 만들므로 여기서 다시 펼쳐지지 않는다.)
+  useEffect(() => {
+    if (value !== "") setExpanded(true);
+  }, [value]);
+
   // 펼쳐지면 곧바로 입력할 수 있게 포커스를 넘긴다.
   // input 은 접힘 상태에서 disabled 라, re-render 뒤인 effect 에서 호출해야 한다.
   useEffect(() => {

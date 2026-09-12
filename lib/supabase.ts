@@ -60,13 +60,15 @@ async function supabaseSelect<T>(
     target.searchParams.set(k, v);
   }
 
+  // fetch 수준의 캐시 옵션을 두지 않는다. 갱신 주기는 이 함수를 부르는
+  // 라우트의 revalidate 가 단독으로 정한다 — 두 곳에 각각 캐시를 두면
+  // 어느 쪽이 오래된 값인지 알 수 없게 된다.
   const res = await fetch(target.toString(), {
     headers: {
       apikey: key,
       Authorization: `Bearer ${key}`,
       Accept: "application/json",
     },
-    cache: "no-store",
   });
 
   if (!res.ok) {

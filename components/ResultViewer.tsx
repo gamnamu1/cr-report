@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useMemo, useCallback, ComponentType } from 'react';
+import { useState, useMemo, useCallback, ComponentType, Suspense } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { ExternalLink, FileDown, ArrowLeft, Users, NotebookPen, BookOpenCheck, Newspaper, Link2 } from 'lucide-react';
 import { truncateShareTitle } from '../lib/shareTitle';
 import { SITE_URL } from '../lib/site';
@@ -20,13 +21,42 @@ const MotionDiv = dynamic(
 
 interface ResultViewerProps {
   result: AnalysisResult;
-  /** "리포트 목록으로" 가 돌아갈 주소. 검색어를 달고 들어온 경우 /?q=... */
-  listHref?: string;
 }
 
 type ReportTab = 'comprehensive' | 'journalist' | 'student';
 
-export function ResultViewer({ result, listHref = "/" }: ResultViewerProps) {
+/** "리포트 목록으로" 링크의 겉모습. href 만 갈아끼운다. */
+function BackToListLink({ href }: { href: string }) {
+  return (
+    <Link
+      href={href}
+      className="flex items-center gap-2 text-navy-600 hover:text-navy-900 transition-colors"
+    >
+      <ArrowLeft className="w-5 h-5" />
+      <span>리포트 목록으로</span>
+    </Link>
+  );
+}
+
+/**
+ * 주소창의 q 를 읽어 목록으로 돌아갈 주소를 만든다.
+ *
+ * 상세 페이지가 정적 생성되므로 서버는 더 이상 searchParams 를 읽지 않는다.
+ * useSearchParams 는 Suspense 경계 안에서만 쓸 수 있고 경계 안쪽은 정적 HTML
+ * 에 담기지 않으므로, 링크 하나만 경계 안에 두고 fallback 으로 같은 링크를
+ * `/` 로 렌더한다 — 경계가 풀리기 전에도 목록으로 갈 수 있다.
+ */
+function BackToListLinkWithQuery() {
+  const searchParams = useSearchParams();
+  const raw = searchParams.get('q') ?? '';
+  // 빈 값·공백뿐인 값은 검색어로 취급하지 않는다(서버가 하던 정규화와 같다).
+  const href =
+    raw.trim() === '' ? '/' : `/?${new URLSearchParams({ q: raw }).toString()}`;
+
+  return <BackToListLink href={href} />;
+}
+
+export function ResultViewer({ result }: ResultViewerProps) {
   const [activeTab, setActiveTab] = useState<ReportTab>('comprehensive');
   const [showPreviewModal, setShowPreviewModal] = useState(false);
 
@@ -253,13 +283,9 @@ export function ResultViewer({ result, listHref = "/" }: ResultViewerProps) {
       <header className="border-b border-navy-200 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="mx-auto max-w-7xl px-6 py-4">
           <div className="flex items-center justify-between">
-            <Link
-              href={listHref}
-              className="flex items-center gap-2 text-navy-600 hover:text-navy-900 transition-colors"
-            >
-              <ArrowLeft className="w-5 h-5" />
-              <span>리포트 목록으로</span>
-            </Link>
+            <Suspense fallback={<BackToListLink href="/" />}>
+              <BackToListLinkWithQuery />
+            </Suspense>
           </div>
         </div>
       </header>

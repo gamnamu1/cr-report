@@ -5,10 +5,10 @@ import "./globals.css";
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: "Critical Readers",
-  description: "시민이 검수한 뉴스 비평 리포트를 모아 두는 열람 전용 공간",
+  description: "함께 읽고, 함께 바꾸는 저널리즘. 시민이 뉴스의 품질을 직접 살피고, 비평 리포트를 만들고 검수해 공유합니다.",
   openGraph: {
     title: "Critical Readers",
-    description: "시민이 검수한 뉴스 비평 리포트를 모아 두는 열람 전용 공간",
+    description: "함께 읽고, 함께 바꾸는 저널리즘. 시민이 뉴스의 품질을 직접 살피고, 비평 리포트를 만들고 검수해 공유합니다.",
     siteName: "Critical Readers",
     type: "website",
     locale: "ko_KR",
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Critical Readers",
-    description: "시민이 검수한 뉴스 비평 리포트를 모아 두는 열람 전용 공간",
+    description: "함께 읽고, 함께 바꾸는 저널리즘. 시민이 뉴스의 품질을 직접 살피고, 비평 리포트를 만들고 검수해 공유합니다.",
     images: ["/og-image.jpg"],
   },
 };

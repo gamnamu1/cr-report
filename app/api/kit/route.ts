@@ -5,9 +5,9 @@ import { KIT_POSTAMBLE } from "@/lib/kit/reference";
 import { KIT_VERSION } from "@/lib/kit/version";
 
 export const runtime = "nodejs";
-// 상수 JSON 이지만 Cache-Control 을 우리가 지정한 값으로 확실히 내보내기 위해
-// 매 요청 핸들러를 태운다. 캐시는 아래 헤더가 담당한다.
-export const dynamic = "force-dynamic";
+// 상수 JSON 이라 빌드 시점에 한 번 생성해 그대로 내보낸다. 요청마다 핸들러를
+// 태우지 않는다. 공개 캐시는 아래 Cache-Control 헤더가 담당한다.
+export const dynamic = "force-static";
 
 /**
  * 키트 전달용 엔드포인트.
