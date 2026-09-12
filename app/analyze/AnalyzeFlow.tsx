@@ -44,6 +44,9 @@ const ERROR_MESSAGES: Record<string, string> = {
   SOURCE_TIMEOUT:
     "언론사 페이지의 응답이 너무 늦어요. 잠시 후 다시 시도하시거나, 아래에서 직접 넣어 주세요.",
   RATE_LIMITED: "요청이 잠시 몰렸어요. 1분쯤 뒤에 다시 눌러 주세요.",
+  // 서버 전체 혼잡(503). 시민별 빈도 제한인 RATE_LIMITED(429)와 다른 문구이며 합치지 않는다.
+  EXTRACTOR_BUSY:
+    "지금은 기사 불러오기 요청이 많아요. 잠시 후 다시 시도하거나, 기사 내용을 직접 붙여넣어 주세요.",
   UNAUTHORIZED_CALLER: UNAVAILABLE,
   EXTRACTOR_ERROR: UNAVAILABLE,
   EXTRACTOR_DISABLED: UNAVAILABLE,
@@ -77,6 +80,13 @@ const BTN =
   "inline-flex items-center justify-center gap-2 rounded-[10px] border-none px-[1.4rem] text-base font-extrabold outline-none focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-amber-500";
 const BTN_PRIMARY = `${BTN} mt-[0.9rem] min-h-[3.2rem] w-full bg-navy-800 text-white hover:bg-navy-900 disabled:cursor-not-allowed disabled:bg-navy-200`;
 const BTN_GHOST = `${BTN} min-h-[2.8rem] w-full border-[1.5px] border-navy-200 bg-white text-[0.93rem] font-bold text-navy-700 hover:border-navy-500 sm:w-auto`;
+// 오류 블록의 '기사 내용 직접 붙여넣기' 전용. BTN_GHOST 보다 약한 보조 버튼이다.
+// 좁은 화면에서는 두 버튼이 한 줄에 들어가지 않아 어차피 쌓이므로, BTN_GHOST 와
+// 같이 w-full 로 두어 테두리 좌우 끝을 맞춘다(sm 이상에서는 내용 너비).
+// 위계는 높이(2.4 vs 2.8rem)와 글자 굵기(500 vs 800)가 담당한다. 색은 navy-600 을
+// 유지한다 — navy-500 은 AA 미달이다. BTN_GHOST 는 다른 다섯 곳이 공유하므로 그
+// 상수를 건드리지 않고 이 최소 클래스를 따로 둔다.
+const BTN_GHOST_WEAK = `${BTN} min-h-[2.4rem] w-full border-[1.5px] border-navy-200 bg-white text-[0.88rem] font-medium text-navy-600 hover:border-navy-400 sm:w-auto`;
 const BTN_ROW = "mt-[0.9rem] flex flex-wrap gap-[0.6rem]";
 const STATUS =
   "mt-4 rounded-[10px] border border-navy-100 bg-navy-50 px-[1.05rem] py-[0.9rem] text-[0.95rem] text-navy-700";
@@ -200,6 +210,11 @@ export function AnalyzeFlow() {
   /** 시민이 '기사 불러오기'를 눌렀던 원 URL. §3-4 3분기의 근거라 입력칸과 따로 둔다. */
   const submittedUrlRef = useRef<string | null>(null);
   const slowTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /**
+   * /api/extract 요청 세대. handleFetch 시작·직접 입력 열기(openManual 호출)·resetAll 이 올린다(§4.2-a).
+   * 늦게 도착한 이전 세대의 응답·타이머 콜백은 이 값과 비교해 스스로 상태 갱신을 건너뛴다(§4.2-b).
+   */
+  const extractGenRef = useRef(0);
   /** /api/kit 요청 세대. reset 하면 올려서, 진행 중이던 응답이 새 상태를 덮지 못하게 한다. */
   const kitGenRef = useRef(0);
 
@@ -248,14 +263,24 @@ export function AnalyzeFlow() {
     // URL 형식을 클라이언트에서 선판정하지 않는다. 스킴 보정은 상류 책임이다.
     if (trimmed === "" || loading) return;
 
+    // 이 요청의 세대. 늦게 도착한 응답·타이머는 이 값과 extractGenRef 를 비교한다(§4.2).
+    const gen = ++extractGenRef.current;
+
     setErrorMsg(null);
     setManualOpen(false);
     setLoading(true);
     setLoadingMsg(LOADING_MSG);
     submittedUrlRef.current = trimmed;
 
+    // 지연 안내 타이머는 이 요청에 귀속한다(§4.2-e). finally 는 아래 지역 변수만
+    // 정리하므로, 이전 세대의 늦은 finally 가 이후 요청의 타이머를 끄지 못한다.
+    // slowTimerRef 에도 보관해 openManual·resetAll 이 "진행 중 타이머"를 끌 수 있게 한다.
     if (slowTimerRef.current) clearTimeout(slowTimerRef.current);
-    slowTimerRef.current = setTimeout(() => setLoadingMsg(LOADING_SLOW_MSG), 4000);
+    const slowTimer = setTimeout(() => {
+      if (gen !== extractGenRef.current) return; // 무효화된 요청의 지연 안내는 띄우지 않는다
+      setLoadingMsg(LOADING_SLOW_MSG);
+    }, 4000);
+    slowTimerRef.current = slowTimer;
 
     try {
       const res = await fetch("/api/extract", {
@@ -287,6 +312,9 @@ export function AnalyzeFlow() {
         typeof article?.title === "string" &&
         typeof article?.content === "string";
 
+      // 무효화된 요청(직접 입력 열기·재추출·resetAll 이후)의 응답은 상태를 건드리지 않는다(§4.2-b).
+      if (gen !== extractGenRef.current) return;
+
       if (!ok) {
         setErrorMsg(messageForCode(payload.code));
         return;
@@ -317,12 +345,37 @@ export function AnalyzeFlow() {
       serverArticleRef.current = next;
       setConfirmed(next);
     } catch {
+      if (gen !== extractGenRef.current) return; // 무효화된 요청의 오류는 표시하지 않는다(§4.2-b)
       // 네트워크 자체가 실패한 경우도 표에 없는 상황이라 fallback 을 쓴다.
       setErrorMsg(FETCH_FAILED);
     } finally {
-      if (slowTimerRef.current) clearTimeout(slowTimerRef.current);
-      setLoading(false);
+      // 자기 요청의 타이머만 끈다(§4.2-e). 공유 ref 가 아직 자기 것일 때만 비운다.
+      clearTimeout(slowTimer);
+      if (slowTimerRef.current === slowTimer) slowTimerRef.current = null;
+      // 무효화됐다면 로딩 표시는 무효화한 쪽이 이미 내렸으므로 건드리지 않는다(§4.2-b,-c).
+      if (gen === extractGenRef.current) {
+        setLoading(false);
+        setLoadingMsg(LOADING_MSG);
+      }
     }
+  }
+
+  /**
+   * 직접 입력 폼을 연다. 현재 호출 지점은 오류 블록의 '기사 내용 직접 붙여넣기' 하나다.
+   * 여는 순간 진행 중이던 추출을 무효화하고(§4.2-a #2), 늦게 올 응답이 상태를
+   * 덮지 못하게 되므로(§4.2-b) 로딩 표시는 여기서 직접 내린다(§4.2-c).
+   * submittedUrlRef 는 건드리지 않는다 — 시도했던 URL 을 보존한다(§4.2-d, §4.3).
+   */
+  function openManual() {
+    extractGenRef.current += 1;
+    if (slowTimerRef.current) {
+      clearTimeout(slowTimerRef.current);
+      slowTimerRef.current = null;
+    }
+    setLoading(false);
+    setLoadingMsg(LOADING_MSG);
+    setManualErrors({});
+    setManualOpen(true);
   }
 
   function handleManualSubmit() {
@@ -485,6 +538,7 @@ export function AnalyzeFlow() {
   /** '처음부터 다시 하기'. 새로고침 대신 상태를 전부 되돌린다. */
   function resetAll() {
     kitGenRef.current += 1; // 진행 중인 /api/kit 응답을 무효화한다
+    extractGenRef.current += 1; // 진행 중인 /api/extract 응답을 무효화한다(§4.2-a #3)
     if (slowTimerRef.current) clearTimeout(slowTimerRef.current);
     setUrl("");
     setLoading(false);
@@ -568,6 +622,7 @@ export function AnalyzeFlow() {
           {errorMsg && (
             <div className={STATUS_STRONG}>
               <p>{errorMsg}</p>
+              {/* 직접 입력은 오류 뒤에만 여는 보조 동작이라 이 블록 안에 둔다(§4.1). */}
               <div className={BTN_ROW}>
                 <button
                   type="button"
@@ -576,13 +631,14 @@ export function AnalyzeFlow() {
                 >
                   다시 시도
                 </button>
+                {/* openManual 을 그대로 호출한다. 이 버튼은 오류 뒤에만 보이므로
+                    openManual 의 세대 무효화·로딩 정리는 지금은 발동하지 않는 방어다 —
+                    비용이 없고 UI 가 다시 바뀌면 필요하며, 제거하면 §4.2 전체를
+                    재검증해야 하므로 정의를 그대로 둔다. */}
                 <button
                   type="button"
-                  onClick={() => {
-                    setManualErrors({});
-                    setManualOpen(true);
-                  }}
-                  className={BTN_GHOST}
+                  onClick={() => openManual()}
+                  className={BTN_GHOST_WEAK}
                 >
                   기사 내용 직접 붙여넣기
                 </button>
@@ -591,7 +647,7 @@ export function AnalyzeFlow() {
           )}
         </div>
 
-        {/* 수동 입력 폼 — 자동으로 열리지 않는다. 위 버튼으로만 연다. */}
+        {/* 수동 입력 폼 — 자동으로 열리지 않는다. 오류 블록의 '기사 내용 직접 붙여넣기' 로만 연다. */}
         {manualOpen && (
           <div className="mt-4">
             <label htmlFor="manual-title" className={EDIT_LABEL}>
