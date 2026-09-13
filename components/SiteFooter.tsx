@@ -1,11 +1,66 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+/**
+ * 스크롤 방향에 따른 자동 숨김 스위치.
+ *
+ * `false` 로 바꾸면 **자동 숨김만** 꺼진다. 화면 하단 고정, 본문 여백, 메뉴,
+ * 메일 모달, 입력·포커스 예외는 그대로 동작한다. 환경변수나 설정 화면을 두지
+ * 않고 이 상수 하나로만 전환한다.
+ */
+const AUTO_HIDE_ON_SCROLL = true;
+
+/** 이 높이 안쪽(페이지 상단)에서는 방향과 무관하게 표시한다. */
+const TOP_ZONE_PX = 80;
+/** 한 방향으로 이만큼 누적해 움직여야 표시/숨김을 바꾼다. 미세한 떨림 방지. */
+const SCROLL_THRESHOLD_PX = 12;
+/** 페이지 최하단 이 높이 안쪽에서는 표시한다. */
+const BOTTOM_ZONE_PX = 16;
+
+/**
+ * 슬라이드 전환. transform 만 180ms 로 움직이고, 동작 줄이기 설정에서는 즉시
+ * 바뀐다. Tailwind 가 클래스 문자열을 정적으로 훑으므로 180ms 는 여기에 직접
+ * 적는다(상수로 빼면 클래스가 생성되지 않는다). `duration-*` 유틸리티는
+ * tailwindcss-animate 와 겹쳐 임의값이 버려지므로 transition 단축 속성을 쓴다 —
+ * ExpandingSearch 와 같은 이유다.
+ */
+const FOOTER_TRANSITION_CLASS =
+  "[transition:transform_180ms_ease-out] motion-reduce:[transition:none]";
+
+/**
+ * 측정 전에 쓰는 여백 높이. 서버와 클라이언트 첫 렌더가 같아야 하므로 고정값이다.
+ *
+ * 실제 높이와 같은 공식을 따른다 — 고정분(위 여백 0.625rem + 메뉴 한 줄) 에
+ * 아래 여백 `max(0.625rem, env(safe-area-inset-bottom))` 을 더한다.
+ * 고정분 2.5675rem 은 안전영역 0·기본 글자 크기에서 실측한 풋터 높이
+ * 51.08px 에서 아래 여백 0.625rem(10px) 을 뺀 값이다(41.08px).
+ *
+ * 이 값은 첫 페인트용 근삿값일 뿐이다. 마운트 직후 ResizeObserver 가 잰
+ * 실제 높이가 인라인 style 로 덮어쓰므로, 글자 확대·줄바꿈은 고정값에 갇히지
+ * 않는다.
+ */
+const FALLBACK_SPACER_CLASS =
+  "h-[calc(2.5675rem+max(0.625rem,env(safe-area-inset-bottom)))]";
+
 /** 완성한 리포트를 받는 주소. 모달 안에도 텍스트로 그대로 보여준다(육안 폴백). */
 const REPORT_EMAIL = "report@cr-report.kr";
+
+/**
+ * 포커스가 들어가면 메뉴를 숨길 '진짜 텍스트 입력' 판정 대상.
+ * 버튼·체크박스·라디오는 포함하지 않는다.
+ */
+const TEXT_INPUT_TYPES = new Set([
+  "text",
+  "search",
+  "url",
+  "email",
+  "tel",
+  "password",
+  "number",
+]);
 
 type CopyState = "success" | "failure";
 
@@ -34,6 +89,21 @@ function itemClass(active: boolean): string {
   ].join(" ");
 }
 
+/** 텍스트를 입력하는 요소인지. 모바일 키보드와 겹치는 것을 피하기 위한 판정이다. */
+function isTextInputElement(element: Element | null): boolean {
+  if (!(element instanceof HTMLElement)) return false;
+  if (element.isContentEditable) return true;
+  if (element instanceof HTMLTextAreaElement) {
+    return !element.disabled && !element.readOnly;
+  }
+  if (element instanceof HTMLInputElement) {
+    return (
+      TEXT_INPUT_TYPES.has(element.type) && !element.disabled && !element.readOnly
+    );
+  }
+  return false;
+}
+
 interface SiteFooterProps {
   /**
    * 서버에서 읽은 ANALYZE_PUBLIC 값. false 면 '리포트 만들기' 링크를 렌더링하지
@@ -46,6 +116,16 @@ interface SiteFooterProps {
  * 사이트 공통 풋터. 항목 4개(ANALYZE_PUBLIC 이 꺼지면 3개)를 가운데 정렬로
  * 배치한다. © 표기는 없다.
  *
+ * 화면 하단에 고정되고, 아래로 스크롤하면 숨고 위로 스크롤하면 다시 나온다.
+ * 세 요소로 이루어진다.
+ *
+ *  1. 본문 흐름 안의 여백 — 실제 메뉴 높이만큼 자리를 잡아 마지막 본문이 바에
+ *     가리지 않게 한다. 표시·숨김 중에도 높이를 바꾸지 않는다(바꾸면 페이지
+ *     높이가 흔들려 방향 판정이 되뒤집힌다).
+ *  2. 고정 메뉴 — 메뉴는 한 번만 렌더링하고, transform 은 **여기에만** 건다.
+ *  3. 메일 모달 — transform 바깥의 형제다. transform 이 걸린 조상 안에 있으면
+ *     `position: fixed` 의 기준이 그 조상으로 바뀌어 화면 중앙에 서지 못한다.
+ *
  * '리포트 보내기'는 페이지 이동이 아니므로 button 이다. mailto: 를 열지 않고
  * 받는 주소를 클립보드에 복사한 뒤 안내 모달을 띄운다.
  */
@@ -55,6 +135,195 @@ export function SiteFooter({ analyzePublic }: SiteFooterProps) {
   const [copyState, setCopyState] = useState<CopyState | null>(null);
   // 모달을 닫을 때 포커스를 되돌릴 대상.
   const reportButtonRef = useRef<HTMLButtonElement>(null);
+
+  const footerRef = useRef<HTMLElement>(null);
+  // 측정 전에는 null. 서버 렌더와 클라이언트 첫 렌더가 같아야 하므로 이 값으로
+  // 시작하고, 마운트 뒤 실제 높이로 바꾼다(window 를 렌더 중에 읽지 않는다).
+  const [footerHeight, setFooterHeight] = useState<number | null>(null);
+
+  const [scrollVisible, setScrollVisible] = useState(true);
+  const [footerFocused, setFooterFocused] = useState(false);
+  const [textInputFocused, setTextInputFocused] = useState(false);
+
+  // ---- 표시 판단 (계획서 2.3 우선순위) --------------------------------
+  // 1. 모달이 열려 있거나 풋터 안에 포커스가 있으면 표시를 유지한다.
+  const showLocked = copyState !== null || footerFocused;
+  // 2. 풋터 밖 텍스트 입력에 포커스가 있으면 숨긴다.
+  const hideLocked = !showLocked && textInputFocused;
+  // 3·4. 나머지는 스크롤 판정(상단·하단·비스크롤 예외 포함)을 따른다.
+  const visible = showLocked ? true : hideLocked ? false : scrollVisible;
+
+  const scrollVisibleRef = useRef(true);
+  const lastScrollYRef = useRef(0);
+  const accumulatedRef = useRef(0);
+  const lockedRef = useRef(false);
+
+  /** 상태가 실제로 바뀔 때만 갱신한다. */
+  const applyScrollVisible = useCallback((next: boolean) => {
+    if (scrollVisibleRef.current === next) return;
+    scrollVisibleRef.current = next;
+    setScrollVisible(next);
+  }, []);
+
+  /** 탄성 스크롤(위·아래 바운스)을 유효 범위로 보정해 읽는다. */
+  const readScroll = useCallback(() => {
+    const doc = document.documentElement;
+    const maxScroll = Math.max(0, doc.scrollHeight - window.innerHeight);
+    const y = Math.min(Math.max(window.scrollY, 0), maxScroll);
+    return { y, maxScroll };
+  }, []);
+
+  /** 기준점을 현재 위치로 옮기고 누적을 버린다. */
+  const resetBaseline = useCallback(() => {
+    lastScrollYRef.current = readScroll().y;
+    accumulatedRef.current = 0;
+  }, [readScroll]);
+
+  const evaluate = useCallback(() => {
+    const { y, maxScroll } = readScroll();
+
+    // 잠금(모달·포커스) 중에는 방향을 누적하지 않는다. 잠금이 풀릴 때 그동안의
+    // 오래된 차이가 뒤늦게 적용되지 않도록 기준점만 따라 옮긴다.
+    if (lockedRef.current) {
+      lastScrollYRef.current = y;
+      accumulatedRef.current = 0;
+      return;
+    }
+
+    // 상단·최하단·스크롤할 내용이 없는 화면에서는 언제나 표시한다.
+    if (
+      maxScroll <= 0 ||
+      y <= TOP_ZONE_PX ||
+      y >= maxScroll - BOTTOM_ZONE_PX
+    ) {
+      lastScrollYRef.current = y;
+      accumulatedRef.current = 0;
+      applyScrollVisible(true);
+      return;
+    }
+
+    if (!AUTO_HIDE_ON_SCROLL) {
+      lastScrollYRef.current = y;
+      return;
+    }
+
+    const delta = y - lastScrollYRef.current;
+    lastScrollYRef.current = y;
+    if (delta === 0) return;
+
+    // 방향이 바뀌면 반대 방향 누적값을 버리고 새 방향만 쌓는다.
+    if (delta > 0 !== accumulatedRef.current > 0) accumulatedRef.current = 0;
+    accumulatedRef.current += delta;
+
+    if (accumulatedRef.current >= SCROLL_THRESHOLD_PX) {
+      accumulatedRef.current = 0;
+      applyScrollVisible(false);
+    } else if (accumulatedRef.current <= -SCROLL_THRESHOLD_PX) {
+      accumulatedRef.current = 0;
+      applyScrollVisible(true);
+    }
+  }, [applyScrollVisible, readScroll]);
+
+  // 스크롤·창 크기. 스크롤은 passive 로 듣는다.
+  useEffect(() => {
+    resetBaseline();
+    evaluate();
+
+    const handleScroll = () => evaluate();
+    const handleResize = () => {
+      resetBaseline();
+      evaluate();
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    window.addEventListener("resize", handleResize);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [evaluate, resetBaseline]);
+
+  // 검색 등으로 본문 높이가 변하는 경우. 사용자가 스크롤한 것이 아니므로
+  // 방향으로 읽지 않고 기준점만 새로 잡은 뒤 예외 규칙을 다시 따진다.
+  useEffect(() => {
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(() => {
+      resetBaseline();
+      evaluate();
+    });
+    observer.observe(document.body);
+    return () => observer.disconnect();
+  }, [evaluate, resetBaseline]);
+
+  // 실제 메뉴 높이를 재서 여백에 반영한다. 같은 값이면 다시 설정하지 않는다
+  // (관찰 콜백이 자기 자신을 다시 부르는 루프를 만들지 않기 위해).
+  useEffect(() => {
+    const element = footerRef.current;
+    if (!element) return;
+
+    const measure = () => {
+      const next = Math.round(element.getBoundingClientRect().height);
+      setFooterHeight((prev) => (prev === next ? prev : next));
+    };
+
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
+  // 여백만으로는 중간 위치의 키보드 포커스 가림까지 막지 못한다. 브라우저가
+  // 포커스를 화면에 넣을 때 고정 바 높이만큼 비우도록 알려준다.
+  // 이 컴포넌트가 사라지면 원래 값으로 되돌린다.
+  useEffect(() => {
+    if (footerHeight === null) return;
+    const root = document.documentElement;
+    const previous = root.style.scrollPaddingBottom;
+    root.style.scrollPaddingBottom = `${footerHeight}px`;
+    return () => {
+      root.style.scrollPaddingBottom = previous;
+    };
+  }, [footerHeight]);
+
+  // 포커스 추적. 풋터 안이면 표시를 고정하고, 바깥 텍스트 입력이면 숨긴다.
+  useEffect(() => {
+    const handleFocusIn = (event: FocusEvent) => {
+      const target = event.target as Element | null;
+      const insideFooter = Boolean(
+        target && footerRef.current?.contains(target)
+      );
+      setFooterFocused(insideFooter);
+      setTextInputFocused(!insideFooter && isTextInputElement(target));
+    };
+
+    const handleFocusOut = (event: FocusEvent) => {
+      // 다음 대상이 있으면 focusin 이 곧 이어진다. 거기서 판단한다.
+      if (event.relatedTarget) return;
+      setFooterFocused(false);
+      setTextInputFocused(false);
+    };
+
+    document.addEventListener("focusin", handleFocusIn);
+    document.addEventListener("focusout", handleFocusOut);
+    return () => {
+      document.removeEventListener("focusin", handleFocusIn);
+      document.removeEventListener("focusout", handleFocusOut);
+    };
+  }, []);
+
+  // 잠금이 걸리거나 풀리면 현재 위치에서 기준점을 다시 잡고 재평가한다.
+  useEffect(() => {
+    lockedRef.current = showLocked || hideLocked;
+    resetBaseline();
+    evaluate();
+  }, [showLocked, hideLocked, evaluate, resetBaseline]);
+
+  // 페이지를 옮기면 표시 상태로 시작한다.
+  useEffect(() => {
+    applyScrollVisible(true);
+    resetBaseline();
+  }, [pathname, applyScrollVisible, resetBaseline]);
 
   async function handleReportClick() {
     try {
@@ -72,58 +341,84 @@ export function SiteFooter({ analyzePublic }: SiteFooterProps) {
   }
 
   return (
-    // 폭은 홈 본문과 같은 max-w-4xl 로 맞춘다. 구분선이 본문 칼럼과 나란해야
-    // 하므로 화면 끝까지 늘리지 않는다.
-    <footer className="mx-auto mt-0 w-full max-w-4xl px-6 pb-10">
-      {/* 640px 이상은 항목 간격 2.25rem, 미만은 1rem + 라벨 축약(한 줄 유지). */}
-      <nav
-        aria-label="사이트 안내"
-        className="flex flex-wrap items-center justify-center gap-x-4 gap-y-3 sm:gap-9 whitespace-nowrap border-t border-navy-100 pt-[1.6rem] text-[0.92rem]"
+    <>
+      {/* 1. 본문 흐름 안의 여백. 장식용이라 보조기기에서 감춘다. */}
+      <div
+        aria-hidden="true"
+        className={`w-full shrink-0 ${FALLBACK_SPACER_CLASS}`}
+        style={footerHeight === null ? undefined : { height: footerHeight }}
+      />
+
+      {/* 2. 화면 하단 고정 메뉴. transform 은 여기에만 건다.
+             키보드로 들어오면(footerFocused) 전환 없이 곧바로 보인다. */}
+      <footer
+        ref={footerRef}
+        className={[
+          "fixed inset-x-0 bottom-0 z-40 bg-white/90 backdrop-blur-sm",
+          footerFocused ? "[transition:none]" : FOOTER_TRANSITION_CLASS,
+        ].join(" ")}
+        style={{ transform: visible ? "translateY(0)" : "translateY(100%)" }}
       >
-        <Link
-          href="/"
-          aria-current={pathname === "/" ? "page" : undefined}
-          className={itemClass(pathname === "/")}
-        >
-          리포트 읽기
-        </Link>
+        {/* 폭은 본문과 같은 max-w-4xl 로 맞춘다. 구분선이 본문 칼럼과 나란해야
+            하므로 화면 끝까지 늘리지 않는다.
 
-        {analyzePublic && (
-          <Link
-            href="/analyze"
-            aria-label="리포트 만들기"
-            aria-current={pathname === "/analyze" ? "page" : undefined}
-            className={itemClass(pathname === "/analyze")}
+            아래 여백은 디자인 여백과 모바일 안전영역 중 **큰 쪽**만 쓴다(max).
+            둘을 더하면 안전영역이 있는 기기에서 여백이 이중으로 쌓인다.
+            안전영역이 0인 환경에서는 0.625rem 이 그대로 적용된다. 기기 감지나
+            미디어쿼리는 두지 않는다 — env() 가 이미 그 역할을 한다. */}
+        <div className="mx-auto w-full max-w-4xl px-6 pb-[max(0.625rem,env(safe-area-inset-bottom))]">
+          {/* 640px 이상은 항목 간격 2.25rem, 미만은 1rem + 라벨 축약(한 줄 유지). */}
+          <nav
+            aria-label="사이트 안내"
+            className="flex flex-wrap items-center justify-center gap-x-4 gap-y-3 sm:gap-9 whitespace-nowrap border-t border-navy-100 pt-2.5 text-[0.92rem]"
           >
-            <span className="sm:hidden">만들기</span>
-            <span className="hidden sm:inline">리포트 만들기</span>
-          </Link>
-        )}
+            <Link
+              href="/"
+              aria-current={pathname === "/" ? "page" : undefined}
+              className={itemClass(pathname === "/")}
+            >
+              리포트 읽기
+            </Link>
 
-        <button
-          ref={reportButtonRef}
-          type="button"
-          onClick={handleReportClick}
-          aria-label="리포트 보내기"
-          className={itemClass(false)}
-        >
-          <span className="sm:hidden">보내기</span>
-          <span className="hidden sm:inline">리포트 보내기</span>
-        </button>
+            {analyzePublic && (
+              <Link
+                href="/analyze"
+                aria-label="리포트 만들기"
+                aria-current={pathname === "/analyze" ? "page" : undefined}
+                className={itemClass(pathname === "/analyze")}
+              >
+                <span className="sm:hidden">만들기</span>
+                <span className="hidden sm:inline">리포트 만들기</span>
+              </Link>
+            )}
 
-        <Link
-          href="/declaration"
-          aria-label="지금 우리는"
-          aria-current={pathname === "/declaration" ? "page" : undefined}
-          className={itemClass(pathname === "/declaration")}
-        >
-          <span className="sm:hidden">우리는</span>
-          <span className="hidden sm:inline">지금 우리는</span>
-        </Link>
-      </nav>
+            <button
+              ref={reportButtonRef}
+              type="button"
+              onClick={handleReportClick}
+              aria-label="리포트 보내기"
+              className={itemClass(false)}
+            >
+              <span className="sm:hidden">보내기</span>
+              <span className="hidden sm:inline">리포트 보내기</span>
+            </button>
 
+            <Link
+              href="/declaration"
+              aria-label="지금 우리는"
+              aria-current={pathname === "/declaration" ? "page" : undefined}
+              className={itemClass(pathname === "/declaration")}
+            >
+              <span className="sm:hidden">우리는</span>
+              <span className="hidden sm:inline">지금 우리는</span>
+            </Link>
+          </nav>
+        </div>
+      </footer>
+
+      {/* 3. 모달. 움직이는 풋터 바깥의 형제여야 화면 전체 기준으로 가운데 선다. */}
       {copyState && <MailModal state={copyState} onClose={closeModal} />}
-    </footer>
+    </>
   );
 }
 
