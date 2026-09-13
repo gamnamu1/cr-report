@@ -24,9 +24,12 @@ Vercel 에서, `extractor/` 는 Railway 에서 각각 실행되며 **cr-check �
 않는다. 출처·해시·바꾼 부분은 [`extractor/SOURCE.md`](./extractor/SOURCE.md),
 실행·배포·복구는 [`extractor/README.md`](./extractor/README.md) 참고.
 
-이 분리는 **현재 운영 중인 기사 추출 경로가 cr-check 서버에서 떨어져 나온다**
-는 뜻이다. 계정·저장소·DB·Railway 워크스페이스까지 완전히 격리한다는 뜻은
-아니다.
+현재 cr-report 는 **기사 추출 런타임과 공개 리포트 DB 모두 cr-check 와
+분리되어 있다.** 웹은 Vercel, 기사 추출은 Railway 의 `cr-report-extractor`,
+공개 리포트는 Supabase 의 `cr-report-db` 를 쓴다. cr-check 는 별도 백엔드와
+`cr-check-db` 를 계속 쓴다. 다만 GitHub 계정, Supabase Organization, Railway
+워크스페이스 같은 상위 관리 단위는 일부 공유할 수 있으며, 이는 런타임이나
+데이터가 서로 의존한다는 뜻이 아니다.
 
 ## 기술 스택
 
@@ -35,6 +38,7 @@ Vercel 에서, `extractor/` 는 Railway 에서 각각 실행되며 **cr-check �
 - TailwindCSS 3
 - Supabase REST API (별도 SDK 없이 기본 `fetch` 로 호출)
 - Vercel 배포
+- Railway 배포 (`extractor/` 기사 추출 서비스)
 
 ## 환경변수
 
@@ -43,14 +47,19 @@ Vercel 프로젝트와 로컬 `.env.local` 양쪽에 아래 값을 설정한다.
 
 | 변수 | 필수 | 설명 |
 |------|------|------|
-| `SUPABASE_URL` | ✓ | Supabase 프로젝트 URL (`https://xxxx.supabase.co`) |
-| `SUPABASE_ANON_KEY` | ✓ | Supabase anon public API key |
+| `SUPABASE_URL` | ✓ | cr-report 전용 Supabase 프로젝트 `cr-report-db` 의 URL (`https://xxxx.supabase.co`) |
+| `SUPABASE_ANON_KEY` | ✓ | `cr-report-db` 의 legacy anon public API key |
 | `NEXT_PUBLIC_SITE_URL` | ✓ | 사이트 정식 도메인 (`https://cr-report.kr`) |
 | `EXTRACT_API_KEY` | 기사 자동 불러오기 사용 시 | 전용 extractor 호출용 서버 비밀키 |
 | `EXTRACT_API_BASE` | 기사 자동 불러오기 사용 시 | 전용 extractor 서비스의 origin. 미설정이면 폴백 없이 503 |
 | `ANALYZE_PUBLIC` | | `"true"` 이면 홈 풋터 노출·`/analyze` 색인·sitemap 등재. 직접 URL 접근은 항상 가능. **빌드 시점 값**이라 바꾸면 재배포해야 한다 |
 
 `anon` 키로만 접근하며, 테이블은 RLS 로 SELECT 만 허용된다.
+
+cr-report 의 운영 데이터 소스는 Supabase 의 `cr-report-db` 하나다. cr-check 의
+`cr-check-db` 는 런타임 데이터 소스로 쓰지 않는다. Production 과 Preview 모두
+`SUPABASE_URL` 과 `SUPABASE_ANON_KEY` 가 `cr-report-db` 를 가리켜야 한다.
+**애플리케이션에는 `service_role` 키를 넣지 않는다.**
 
 `SUPABASE_URL` 과 `SUPABASE_ANON_KEY` 는 런타임뿐 아니라 **빌드에도 필요하다.**
 목록·상세·sitemap 을 빌드 시점에 생성하면서 Supabase 를 읽기 때문에, 값이
@@ -110,7 +119,8 @@ query·fragment·사용자명이 들어 있으면 잘라내지 않고 거부한�
 
 ## 데이터 소스
 
-Supabase 테이블 `citizen_reports` 한 행이 리포트 한 건을 완전하게 표현한다.
+운영 데이터베이스는 Supabase 의 `cr-report-db` 이며, `public.citizen_reports`
+한 행이 리포트 한 건을 완전하게 표현한다.
 스키마 정의와 예시 SQL은 [`supabase/citizen_reports.sql`](./supabase/citizen_reports.sql) 참고.
 
 컬럼 요약:
@@ -197,6 +207,9 @@ npm start
 - 저장소를 그대로 프로젝트 루트로 임포트하면 된다 (Root Directory 별도 설정 불필요).
 - Vercel 환경변수에 위 표의 값을 등록한다. `NEXT_PUBLIC_SITE_URL` 은 빌드
   시점에 번들에 인라인되므로, 값을 바꾸면 재배포해야 반영된다.
+- Production 과 Preview 모두 `SUPABASE_*` 는 `cr-report-db` 를,
+  `EXTRACT_API_*` 는 `cr-report-extractor` 를 가리켜야 한다. 환경변수를 바꾼
+  뒤에는 해당 환경을 재배포해야 값이 반영된다.
 - `cr-report.kr` 를 Vercel 프로젝트의 도메인으로 연결한다. 기존
   `critical-readers.vercel.app` 은 리다이렉트 없이 그대로 두어도 되며,
   canonical 이 정식 도메인을 가리키므로 색인은 한쪽으로 모인다.
