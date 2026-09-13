@@ -24,3 +24,10 @@ tsconfig.tsbuildinfo
 
 # Vercel
 .vercel/
+
+# Python (extractor/)
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
