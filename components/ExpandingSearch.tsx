@@ -7,6 +7,12 @@ interface ExpandingSearchProps {
   /** 검색어. state 는 상위 컴포넌트가 소유한다(controlled). */
   value: string;
   onChange: (v: string) => void;
+  /**
+   * 입력란을 설명하는 요소의 id. 검색 범위 안내문과 잇는 용도다.
+   * 안내문이 보이지 않을 때는 넘기지 않아 매달린 참조를 남기지 않는다.
+   * 이 컴포넌트는 이 값을 aria-describedby 로 전달만 하고 상태를 만들지 않는다.
+   */
+  describedById?: string;
 }
 
 /**
@@ -18,7 +24,11 @@ interface ExpandingSearchProps {
  * - 검색어 상태와 URL(?q=) 반영은 상위 컴포넌트가 담당한다. 이 컴포넌트 자신은
  *   localStorage·sessionStorage·analytics 어디에도 검색어를 기록하지 않는다.
  */
-export function ExpandingSearch({ value, onChange }: ExpandingSearchProps) {
+export function ExpandingSearch({
+  value,
+  onChange,
+  describedById,
+}: ExpandingSearchProps) {
   // ?q= 로 진입해 초기 검색어가 있으면 펼친 채로 시작한다.
   const [expanded, setExpanded] = useState(() => value !== "");
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -125,6 +135,7 @@ export function ExpandingSearch({ value, onChange }: ExpandingSearchProps) {
           disabled={!expanded}
           aria-hidden={!expanded}
           aria-label="리포트 검색"
+          aria-describedby={describedById}
           placeholder="기사 제목·리포트 내용으로 찾기"
           autoComplete="off"
           // 16px 미만이면 iOS 가 포커스 시 화면을 확대한다.
