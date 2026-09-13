@@ -5,6 +5,7 @@ import {
 } from "@/components/SearchableReportList";
 import { SiteFooter } from "@/components/SiteFooter";
 import { ANALYZE_PUBLIC } from "@/lib/flags";
+import { buildReportSearchText } from "@/lib/reportSearch";
 import {
   formatIsoDateToKorean,
   listCitizenReportsForSearch,
@@ -30,16 +31,19 @@ export default async function HomePage() {
   // 목록 조회는 q 와 무관하게 항상 전체다. 필터는 클라이언트에서만 일어난다.
   const reports = await listCitizenReportsForSearch();
 
-  // 게재일 포맷은 서버에서 끝낸다. 클라이언트 컴포넌트가 lib/supabase 를
-  // 런타임 import 하지 않도록 문자열로 만들어 내려보낸다.
+  // 게재일 포맷과 검색용 텍스트를 서버에서 끝낸다. 클라이언트 컴포넌트가
+  // lib/supabase 를 런타임 import 하지 않도록 문자열로 만들어 내려보낸다.
+  //
+  // searchText 는 표시용 원문과 분리한 검색 전용 사본이다. 이 행의 매체명·
+  // 기자명과 링크 주소가 빠져 있다(lib/reportSearch.ts). 원본 journalist·url·
+  // comprehensive_report 는 브라우저 목록으로 내려보내지 않는다 — 카드 렌더에
+  // 쓰이지 않고, 검색도 searchText 하나만 본다.
   const items: ReportListItem[] = reports.map((report) => ({
     share_id: report.share_id,
     title: report.title,
     publisher: report.publisher,
-    journalist: report.journalist,
-    url: report.url,
-    comprehensive_report: report.comprehensive_report,
     publishDateLabel: formatIsoDateToKorean(report.publish_date),
+    searchText: buildReportSearchText(report),
   }));
 
   return (
@@ -54,10 +58,18 @@ export default async function HomePage() {
               C<span className={soft}>ritical</span>{" "}
               R<span className={soft}>eaders</span>
             </h1>
+            {/* 좁은 화면에서 문장이 의미와 무관한 자리에서 끊기지 않도록 구절마다
+                span 을 둔다. sm 이상에서는 inline 이라 지금처럼 한 흐름으로 이어진다.
+                구절 사이의 {" "} 는 실제 공백 텍스트 노드다 — 빼면 데스크톱에서
+                낱말이 붙는다. 문구와 스타일 값은 바꾸지 않는다. */}
             <p className="text-navy-700 text-base md:text-lg leading-relaxed">
-              언론은 시민을 위해 존재하며, 시민의 신뢰는 언론의 가장 소중한
-              자산이다.{" "}
-              <span className="text-[0.8em] opacity-80">
+              <span className="block sm:inline">
+                언론은 시민을 위해 존재하며,
+              </span>{" "}
+              <span className="block sm:inline">
+                시민의 신뢰는 언론의 가장 소중한 자산이다.
+              </span>{" "}
+              <span className="block sm:inline text-[0.8em] opacity-80">
                 - 언론윤리헌장 중에서
               </span>
             </p>

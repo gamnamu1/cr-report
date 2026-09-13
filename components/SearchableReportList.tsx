@@ -1,21 +1,48 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { Fragment, Suspense, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
+import { normalizeSearchText } from "@/lib/reportSearch";
+
 import { ExpandingSearch } from "./ExpandingSearch";
 
-/** 카드 렌더와 클라이언트 필터에 필요한 값만 담은 항목. */
+/**
+ * 검색 범위 안내. 공백이 아닌 검색어가 있는 동안 검색창 아래에 늘 같은 문구로
+ * 보인다. 이름을 감지했다는 알림이 아니라 검색 범위 설명이라, 매체명·기자명을
+ * 넣든 일반 주제어를 넣든 문구가 같다.
+ *
+ * 좁은 화면에서 의미와 무관한 자리에서 끊기지 않도록 구절 단위로 나눠 둔다.
+ * 한 칸 공백으로 이으면 기존 문구와 정확히 같다 — 문구 자체는 바꾸지 않았다.
+ */
+const SEARCH_SCOPE_NOTE_LINES = [
+  "기사 내용에 집중할 수 있도록",
+  "매체명·기자명은 검색 대상에서 제외했어요.",
+  "주제나 내용으로 찾아보세요.",
+] as const;
+
+/** 위 안내문의 id. 입력란과 aria-describedby 로 잇는다. */
+const SEARCH_SCOPE_NOTE_ID = "report-search-scope-note";
+
+/**
+ * 카드 렌더와 클라이언트 필터에 필요한 값만 담은 항목.
+ *
+ * 원본 `journalist`·`url`·`comprehensive_report` 는 여기 없다. 카드가 쓰지
+ * 않고, 검색은 `searchText` 하나만 보기 때문이다. 표시용 `title`·`publisher`
+ * 는 화면에만 쓰고 검색 비교에 다시 합치지 않는다.
+ */
 export interface ReportListItem {
   share_id: string;
   title: string;
   publisher: string | null;
-  journalist: string | null;
-  url: string;
-  comprehensive_report: string;
   /** 서버에서 미리 포맷한 게재일. 게재일이 없으면 빈 문자열. */
   publishDateLabel: string;
+  /**
+   * 서버(app/page.tsx)가 lib/reportSearch 로 만든 검색 전용 텍스트.
+   * 이미 정규화(NFKC·소문자·공백 정리)까지 끝나 있다.
+   */
+  searchText: string;
 }
 
 interface SearchableReportListProps {
@@ -65,31 +92,22 @@ export function SearchableReportList({ reports }: SearchableReportListProps) {
     setQuery((prev) => (prev === next ? prev : next));
   }, []);
 
-  // 필터와 이후 판단은 모두 이 값 하나만 본다.
-  const normalizedQuery = query.trim().toLowerCase();
+  // 필터와 이후 판단은 모두 이 값 하나만 본다. searchText 와 똑같은 정규화를
+  // 써야 비교가 어긋나지 않으므로 lib/reportSearch 의 함수를 그대로 쓴다.
+  const normalizedQuery = normalizeSearchText(query);
 
   // 공백으로 나눈 토큰을 모두 만족해야 한다(AND).
   const tokens =
-    normalizedQuery === "" ? [] : normalizedQuery.split(/\s+/).filter(Boolean);
+    normalizedQuery === "" ? [] : normalizedQuery.split(" ").filter(Boolean);
 
   const visibleReports =
     tokens.length === 0
       ? reports
-      : reports.filter((report) => {
-          // 필드 경계에서 문자열이 우연히 이어붙지 않도록 공백으로 잇는다.
-          const haystack = [
-            report.title,
-            report.publisher,
-            report.journalist,
-            report.comprehensive_report,
-            report.url,
-          ]
-            .map((field) => field ?? "")
-            .join(" ")
-            .toLowerCase();
-
-          return tokens.every((token) => haystack.includes(token));
-        });
+      : reports.filter((report) =>
+          // searchText 이외의 필드는 검색에 합치지 않는다. 표시용 제목·매체명을
+          // 다시 더하면 매체명 제외가 무의미해진다.
+          tokens.every((token) => report.searchText.includes(token))
+        );
 
   // 검색어를 주소창에 반영한다. 히스토리 항목을 쌓지 않도록 replaceState 를 쓰고,
   // Next 라우터가 쓰는 기존 history state 는 그대로 보존한다.
@@ -103,6 +121,10 @@ export function SearchableReportList({ reports }: SearchableReportListProps) {
   }
 
   const hasVisibleReports = visibleReports.length > 0;
+
+  // 공백이 아닌 검색어가 있는 동안에만 안내를 띄운다. 아카이브가 비어 있을
+  // 때("준비 중입니다.")는 검색 자체가 의미 없으므로 띄우지 않는다.
+  const showScopeNote = reports.length > 0 && normalizedQuery !== "";
 
   // 화면 갱신을 스크린리더에 알리는 문구. 검색 전과, 아카이브 자체가 빈
   // 상태("준비 중입니다.")에서는 빈 문자열로 둔다.
@@ -119,7 +141,30 @@ export function SearchableReportList({ reports }: SearchableReportListProps) {
         <QuerySync onQuery={syncQueryFromUrl} />
       </Suspense>
 
-      <ExpandingSearch value={query} onChange={handleQueryChange} />
+      <ExpandingSearch
+        value={query}
+        onChange={handleQueryChange}
+        // 안내문이 없을 때 매달린 id 를 남기지 않는다.
+        describedById={showScopeNote ? SEARCH_SCOPE_NOTE_ID : undefined}
+      />
+
+      {/* 일반 보조 설명이다. aria-live 영역이 아니라서 타이핑마다 다시 낭독되지
+          않고, 입력란에서는 aria-describedby 로 한 번 읽힌다. */}
+      {showScopeNote && (
+        <p
+          id={SEARCH_SCOPE_NOTE_ID}
+          className="mx-auto mt-3 max-w-xl text-center text-sm leading-relaxed text-navy-600"
+        >
+          {SEARCH_SCOPE_NOTE_LINES.map((line, index) => (
+            <Fragment key={line}>
+              {/* 구절 사이의 공백은 실제 텍스트 노드여야 한다. 없으면 sm 이상에서
+                  낱말이 붙고 aria-describedby 로 읽히는 설명도 함께 붙는다. */}
+              {index > 0 && " "}
+              <span className="block sm:inline">{line}</span>
+            </Fragment>
+          ))}
+        </p>
+      )}
 
       {/* 항상 마운트해 두고 텍스트만 갱신한다(조건부 렌더 시 낭독되지 않는다). */}
       <p className="sr-only" aria-live="polite">
@@ -131,7 +176,13 @@ export function SearchableReportList({ reports }: SearchableReportListProps) {
           <div className="bg-white rounded-2xl shadow-sm border border-navy-100 p-12 text-center">
             <p className="text-navy-600 text-lg">준비 중입니다.</p>
           </div>
-        ) : hasVisibleReports ? (
+        ) : !hasVisibleReports ? (
+          <div className="bg-white rounded-2xl shadow-sm border border-navy-100 p-12 text-center">
+            <p className="text-navy-600 text-lg">
+              검색 결과가 없어요. 다른 검색어로 찾아보세요.
+            </p>
+          </div>
+        ) : (
           <ul className="space-y-4">
             {visibleReports.map((report) => (
               <li key={report.share_id}>
@@ -162,7 +213,7 @@ export function SearchableReportList({ reports }: SearchableReportListProps) {
               </li>
             ))}
           </ul>
-        ) : null}
+        )}
       </div>
     </div>
   );
