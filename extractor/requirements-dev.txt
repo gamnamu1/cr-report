@@ -1,0 +1,15 @@
+# extractor/requirements-dev.txt — 테스트에만 필요한 것
+#
+# 런타임과 같은 버전을 쓰도록 requirements.txt 를 그대로 포함한다. 여기에
+# 적힌 패키지는 Dockerfile 의 런타임 이미지에 들어가지 않는다.
+#
+# httpx 는 starlette 의 TestClient 와 취소 시험의 ASGITransport 가 쓴다.
+# 버전은 cr-check 운영 배포에서 읽은 값과 같게 고정했다.
+# anyio 의 pytest 플러그인은 런타임 의존성으로 이미 들어와 있어 따로 설치하지
+# 않는다 (@pytest.mark.anyio 가 그 플러그인을 쓴다).
+
+-r requirements.txt
+
+pytest==9.0.2
+httpx==0.28.1
+httpcore==1.0.9
