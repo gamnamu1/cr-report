@@ -13,9 +13,20 @@ cr-project (기준)  →  cr-check (리포트 초안)  →  사람의 검수  �
 ```
 
 한편 이 사이트의 `/analyze`(리포트 만들기)는 시민이 직접 리포트를 만들기 위한
-간이 도구다. 이 기능은 cr-check 에서 **기사 추출(`/extract`)만** 이용하고, 분석
-요청문은 cr-report 가 조립한다. 실제 비평 초안은 시민이 선택한 외부 AI 에서
-만들어지며, 시민이 직접 검수한다.
+간이 도구다. 이 기능은 **기사 추출만** 별도 서비스에 맡기고, 분석 요청문은
+cr-report 가 조립한다. 실제 비평 초안은 시민이 선택한 외부 AI 에서 만들어지며,
+시민이 직접 검수한다.
+
+기사 추출은 이 저장소의 [`extractor/`](./extractor/) 가 담당한다. 웹은
+Vercel 에서, `extractor/` 는 Railway 에서 각각 실행되며 **cr-check 와 실행
+런타임을 공유하지 않는다.** 파서 코드는 cr-check 의 고정 커밋에서 복사해 온
+것이고 이후로는 cr-report 가 독립 관리한다 — 양쪽이 자동으로 함께 바뀌지
+않는다. 출처·해시·바꾼 부분은 [`extractor/SOURCE.md`](./extractor/SOURCE.md),
+실행·배포·복구는 [`extractor/README.md`](./extractor/README.md) 참고.
+
+이 분리는 **현재 운영 중인 기사 추출 경로가 cr-check 서버에서 떨어져 나온다**
+는 뜻이다. 계정·저장소·DB·Railway 워크스페이스까지 완전히 격리한다는 뜻은
+아니다.
 
 ## 기술 스택
 
@@ -35,8 +46,8 @@ Vercel 프로젝트와 로컬 `.env.local` 양쪽에 아래 값을 설정한다.
 | `SUPABASE_URL` | ✓ | Supabase 프로젝트 URL (`https://xxxx.supabase.co`) |
 | `SUPABASE_ANON_KEY` | ✓ | Supabase anon public API key |
 | `NEXT_PUBLIC_SITE_URL` | ✓ | 사이트 정식 도메인 (`https://cr-report.kr`) |
-| `EXTRACT_API_KEY` | 기사 자동 불러오기 사용 시 | cr-check `/extract` 호출용 서버 비밀키 |
-| `EXTRACT_API_BASE` | | cr-check 백엔드의 베이스 URL. 미설정 시 CR 운영 백엔드로 폴백 |
+| `EXTRACT_API_KEY` | 기사 자동 불러오기 사용 시 | 전용 extractor 호출용 서버 비밀키 |
+| `EXTRACT_API_BASE` | 기사 자동 불러오기 사용 시 | 전용 extractor 서비스의 origin. 미설정이면 폴백 없이 503 |
 | `ANALYZE_PUBLIC` | | `"true"` 이면 홈 풋터 노출·`/analyze` 색인·sitemap 등재. 직접 URL 접근은 항상 가능. **빌드 시점 값**이라 바꾸면 재배포해야 한다 |
 
 `anon` 키로만 접근하며, 테이블은 RLS 로 SELECT 만 허용된다.
@@ -50,12 +61,21 @@ Vercel 프로젝트와 로컬 `.env.local` 양쪽에 아래 값을 설정한다.
 
 `EXTRACT_API_KEY` 는 서버 전용이다. `NEXT_PUBLIC_` 접두어를 붙이면 브라우저
 번들에 그대로 노출되므로 절대 붙이지 않는다. 프록시(`/api/extract`)가 서버에서만
-읽어 cr-check 백엔드로 전달한다.
+읽어 전용 extractor 로 전달한다.
 
-`EXTRACT_API_BASE` 는 cr-check 백엔드의 **베이스 URL** 이다. 코드가 여기에
-`/extract` 를 붙여 호출하므로 값 끝에 `/extract` 를 넣지 않는다. 설정하지
-않으면 CR 이 운영하는 백엔드로 폴백하므로, 포크해서 자기 백엔드를 쓰려면
-반드시 이 값을 설정해야 한다.
+`EXTRACT_API_BASE` 는 **이 저장소의 `extractor/` 를 배포한 서비스의 origin**
+이다. 코드가 여기에 `/extract` 를 붙여 호출하므로 값 끝에 `/extract` 를 넣지
+않는다.
+
+**기본 주소로의 폴백은 없다.** 예전에는 이 값이 비면 cr-check 백엔드로 붙었지만
+지금은 그렇지 않다. `EXTRACT_API_BASE` 와 `EXTRACT_API_KEY` 중 하나라도 비어
+있거나 형식이 맞지 않으면 `/api/extract` 는 **외부를 한 번도 호출하지 않고**
+503 을 돌려준다. 기사 자동 불러오기만 막히고, 리포트 읽기·검색·기사 직접
+붙여넣기는 그대로 동작한다.
+
+값이 잘못됐을 때 임의로 보정하지 않는다. 끝에 `/extract` 가 붙어 있거나
+query·fragment·사용자명이 들어 있으면 잘라내지 않고 거부한다 — 설정이 틀렸다는
+사실이 드러나는 편이 낫기 때문이다. 앞뒤 공백과 끝 슬래시만 정리한다.
 
 `ANALYZE_PUBLIC` 은 문자열 `"true"` 만 참으로 취급하며 세 가지를 통제한다 —
 홈 풋터 노출, `/analyze` 의 noindex, sitemap 등재. 설정하지 않으면 홈에서
@@ -134,9 +154,10 @@ Supabase 테이블 `citizen_reports` 한 행이 리포트 한 건을 완전하�
 
 **API (서버 전용)**
 
-- `POST /api/extract` — cr-check 백엔드 `/extract` 로의 프록시. 비밀키를
+- `POST /api/extract` — 전용 extractor 의 `/extract` 로의 프록시. 비밀키를
   서버에서만 붙여 전달하고, 클라이언트 IP 별 분당 요청 수를 제한한다
-  (인스턴스 로컬 best-effort — 외부 저장소를 쓰지 않으므로 전역 제한은 아니다)
+  (인스턴스 로컬 best-effort — 외부 저장소를 쓰지 않으므로 전역 제한은 아니다).
+  `EXTRACT_API_BASE`·`EXTRACT_API_KEY` 가 갖춰지지 않으면 외부 호출 없이 503
 - `GET /api/kit` — 분석 요청문에 붙일 자료를 정적 응답으로 제공한다. 번들 크기를 줄이기 위한 분리이며 보안 경계는 아니다.
 
 목록·상세·sitemap 은 빌드 시점에 생성되고 60초 주기로 재검증된다(ISR).
@@ -156,8 +177,8 @@ npm install
 # .env.local 생성 (예시: .env.example 참고)
 cp .env.example .env.local
 # SUPABASE_URL, SUPABASE_ANON_KEY 값을 채운다
-# 기사 자동 불러오기를 쓰려면 EXTRACT_API_KEY 를 설정한다
-# 자기 cr-check 백엔드를 쓰려면 EXTRACT_API_BASE 도 설정한다
+# 기사 자동 불러오기를 쓰려면 EXTRACT_API_KEY 를 설정한다 (extractor 와 같은 값)
+# EXTRACT_API_BASE 도 함께 설정한다 (extractor 주소, 폴백 없음)
 # 공개 노출을 켜려면 ANALYZE_PUBLIC=true 로 설정한다
 
 # 개발 서버
@@ -198,7 +219,7 @@ cr-report/
 │   │   ├── page.tsx              # '지금 우리는' 선언문
 │   │   └── DeclarationAudio.tsx  # 낭독 음원 재생
 │   └── api/
-│       ├── extract/route.ts      # cr-check /extract 프록시 (서버 전용)
+│       ├── extract/route.ts      # extractor /extract 프록시 (서버 전용)
 │       └── kit/route.ts          # 키트 자료 런타임 제공
 ├── components/
 │   ├── ResultViewer.tsx          # 3종 탭 리포트 렌더러
@@ -206,6 +227,15 @@ cr-report/
 │   ├── ExpandingSearch.tsx       # 홈 검색창 (돋보기 → 확장)
 │   ├── SearchableReportList.tsx  # 검색어 필터링 목록
 │   └── SiteFooter.tsx            # 풋터 4항목 + 메일 복사 모달
+├── extractor/                    # 전용 기사 추출 서비스 (Railway)
+│   ├── main.py                   # /health + /extract 만
+│   ├── extract_api.py            # cr-check 고정 커밋에서 복사 (원본 그대로)
+│   ├── safe_fetch.py             # 〃
+│   ├── scraper.py                # 〃
+│   ├── Dockerfile                # Python 3.11, 비루트, 워커 2
+│   ├── SOURCE.md                 # 출처·해시·바꾼 부분
+│   ├── README.md                 # 실행·배포·검증·복구
+│   └── tests/                    # 원본 테스트 + 서비스 표면 검사
 ├── lib/
 │   ├── kit/
 │   │   ├── instructions.ts       # 분석 지시서 (요청문 앞부분)
@@ -221,6 +251,9 @@ cr-report/
 │   └── index.ts                  # AnalysisResult 등 타입 정의
 ├── supabase/
 │   └── citizen_reports.sql       # DDL + RLS 정책 + 참고용 복사 SQL
+├── tests/
+│   ├── reportSearch.test.ts      # 검색 회귀 시험
+│   └── extractProxy.test.ts      # 중계 설정·전달 계약 시험
 ├── public/
 │   ├── audio/                    # 선언문 낭독 음원
 │   ├── fonts/                    # 마루부리 (선언문 전용, 자체 호스팅)
@@ -250,7 +283,7 @@ cr-report/
 |------|------|
 | `lib/kit/instructions.ts` | 분석 지시서. 절차의 뼈대는 언어와 무관하지만, 규범을 참조하는 대목은 교체한 자료에 맞춘다 |
 | `lib/shareTitle.ts` | 한국어 기사 제목의 "주제부…부연부" 구조를 전제한 축약 규칙이다. 언어마다 다시 설계해야 한다 |
-| 기사 추출 | `/api/extract` 는 cr-check 백엔드를 호출한다. `EXTRACT_API_BASE` 를 설정하지 않으면 CR 이 운영하는 백엔드를 그대로 쓰게 되므로, 포크해 운영한다면 반드시 자기 백엔드를 지정한다. cr-check 의 파서는 한국 언론사·포털 마크업에 맞춰져 있어 그 사회의 매체에 맞는 파서도 필요하다 |
+| 기사 추출 | `extractor/` 를 자기 서비스로 배포하고 `EXTRACT_API_BASE` 를 그 주소로 지정한다. 폴백이 없으므로 설정하지 않으면 기사 자동 불러오기가 503 이 된다. 파서는 한국 언론사·포털 마크업에 맞춰져 있어, 다른 사회의 매체에 맞는 파서가 따로 필요하다 |
 
 **거의 그대로 쓸 수 있는 것**
 
