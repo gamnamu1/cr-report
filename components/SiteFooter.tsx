@@ -64,15 +64,21 @@ const TEXT_INPUT_TYPES = new Set([
 
 type CopyState = "success" | "failure";
 
-const MODAL_COPY: Record<CopyState, { title: string; guide: string }> = {
+const MODAL_COPY: Record<
+  CopyState,
+  { title: string; guide: string[]; note?: string }
+> = {
   success: {
     title: "메일 주소가 복사되었어요",
-    guide:
-      "완성한 리포트를 보내 주세요. 아카이브에 올려 함께 공유할 수 있어요.",
+    guide: [
+      "완성한 리포트를 보내 주세요.",
+      "아카이브에 올려 함께 공유할 수 있어요.",
+    ],
+    note: "(이름·아이디·메일 주소는 공개하지 않아요)",
   },
   failure: {
     title: "자동 복사가 안 됐어요",
-    guide: "위 메일 주소를 길게 눌러 직접 복사해 주세요.",
+    guide: ["위 메일 주소를 길게 눌러 직접 복사해 주세요."],
   },
 };
 
@@ -440,7 +446,7 @@ interface MailModalProps {
 function MailModal({ state, onClose }: MailModalProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const confirmRef = useRef<HTMLButtonElement>(null);
-  const { title, guide } = MODAL_COPY[state];
+  const { title, guide, note } = MODAL_COPY[state];
 
   useEffect(() => {
     confirmRef.current?.focus();
@@ -503,9 +509,14 @@ function MailModal({ state, onClose }: MailModalProps) {
 
         <p
           id="site-footer-mail-guide"
-          className="mt-4 text-sm leading-relaxed text-navy-600"
+          className="mt-4 break-keep text-sm leading-relaxed text-navy-600"
         >
-          {guide}
+          {guide.map((sentence) => (
+            <span key={sentence} className="block">
+              {sentence}
+            </span>
+          ))}
+          {note && <span className="mt-1 block text-xs">{note}</span>}
         </p>
 
         <button
