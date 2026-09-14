@@ -69,7 +69,7 @@ export default async function HomePage() {
               <span className="block sm:inline">
                 시민의 신뢰는 언론의 가장 소중한 자산이다.
               </span>{" "}
-              <span className="block sm:inline text-[0.8em] opacity-80">
+              <span className="block sm:inline mt-1 sm:mt-0 text-[0.8em] opacity-80">
                 - 언론윤리헌장 중에서
               </span>
             </p>
