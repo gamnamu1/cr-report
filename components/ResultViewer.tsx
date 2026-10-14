@@ -248,7 +248,7 @@ export function ResultViewer({ result, variant = 'public' }: ResultViewerProps) 
           quoteLines.push(lines[i]);
         }
         elements.push(
-          <blockquote key={key++} className="my-4 border-l-4 border-navy-200 pl-4 md:pl-5">
+          <blockquote key={key++} className="relative my-4 pl-5 md:pl-6 before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-1 before:bg-navy-200">
             {quoteLines.map((quoteLine, idx) => {
               const text = quoteLine.replace(/^>\s?/, '');
               // '>' 단독 줄(내용 없음)은 문단 사이 간격
