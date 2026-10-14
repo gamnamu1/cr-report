@@ -240,6 +240,29 @@ export function ResultViewer({ result, variant = 'public' }: ResultViewerProps) 
           </ul>
         );
       }
+      // Blockquote (> 기사 원문 인용) — 이어진 '>' 줄을 상자 하나로 묶는다
+      else if (line.startsWith('>')) {
+        const quoteLines: string[] = [line];
+        while (i + 1 < lines.length && lines[i + 1].startsWith('>')) {
+          i++;
+          quoteLines.push(lines[i]);
+        }
+        elements.push(
+          <blockquote key={key++} className="my-4 border-l-4 border-navy-200 pl-4 md:pl-5">
+            {quoteLines.map((quoteLine, idx) => {
+              const text = quoteLine.replace(/^>\s?/, '');
+              // '>' 단독 줄(내용 없음)은 문단 사이 간격
+              return text.trim() ? (
+                <p key={idx} className="text-navy-600 leading-loose my-1 font-serif text-lg">
+                  {highlightEthics(text)}
+                </p>
+              ) : (
+                <div key={idx} className="h-2" />
+              );
+            })}
+          </blockquote>
+        );
+      }
       // Regular paragraph (including bold text lines)
       else if (line.trim()) {
         elements.push(
