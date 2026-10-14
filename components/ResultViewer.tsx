@@ -21,6 +21,8 @@ const MotionDiv = dynamic(
 
 interface ResultViewerProps {
   result: AnalysisResult;
+  /** "preview" 는 비공개 미리보기(/preview/[id]) 전용이다. 기본은 "public". */
+  variant?: 'public' | 'preview';
 }
 
 type ReportTab = 'comprehensive' | 'journalist' | 'student';
@@ -56,7 +58,8 @@ function BackToListLinkWithQuery() {
   return <BackToListLink href={href} />;
 }
 
-export function ResultViewer({ result }: ResultViewerProps) {
+export function ResultViewer({ result, variant = 'public' }: ResultViewerProps) {
+  const isPreview = variant === 'preview';
   const [activeTab, setActiveTab] = useState<ReportTab>('comprehensive');
   const [showPreviewModal, setShowPreviewModal] = useState(false);
 
@@ -279,6 +282,13 @@ export function ResultViewer({ result }: ResultViewerProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-navy-50 via-white to-amber-50">
+      {/* 미리보기 표시 띠. 정상 페이지와 구분만 되면 된다. */}
+      {isPreview && (
+        <div className="bg-gray-100 py-1 text-center text-xs text-navy-600">
+          비공개 미리보기
+        </div>
+      )}
+
       {/* Header */}
       <header className="border-b border-navy-200 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="mx-auto max-w-7xl px-6 py-4">
@@ -426,8 +436,9 @@ export function ResultViewer({ result }: ResultViewerProps) {
             <span>리포트 문서 저장 (TXT)</span>
           </button>
 
-          {/* Right: SNS Share Buttons */}
-          {sharePath && (
+          {/* Right: SNS Share Buttons — 미리보기에서는 숨긴다. 비공개 리포트의
+              공개 주소(/report/...)는 열리지 않는다. */}
+          {sharePath && !isPreview && (
             <div className="flex gap-2 order-2">
               {/* Copy Link */}
               <button
